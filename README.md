@@ -47,7 +47,7 @@ Model IDs can be overridden with `ANTHROPIC_MODEL`, `GEMINI_MODEL`, `OPENAI_MODE
 
 ```mermaid
 flowchart LR
-    CLI["Engine (04)"] --> P["Providers<br/>Claude · Gemini<br/>ChatGPT · offline"]
+    CLI["Engine (04)"] --> P["Providers<br/>Claude<br/>Gemini<br/>ChatGPT<br/>offline"]
     CLI --> A["Part A<br/>Probes"]
     CLI --> B["Part B<br/>Socratic FSM"]
     CLI --> C["Part C<br/>Debate"]
