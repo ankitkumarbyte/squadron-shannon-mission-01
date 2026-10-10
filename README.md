@@ -47,21 +47,21 @@ Model IDs can be overridden with `ANTHROPIC_MODEL`, `GEMINI_MODEL`, `OPENAI_MODE
 
 ```mermaid
 flowchart LR
-    CLI[04_dialogic_engine.py] --> P[Provider layer<br/>Claude · Gemini · ChatGPT · offline]
-    CLI --> A[Part A<br/>Sycophancy probes]
-    CLI --> B[Part B<br/>Socratic FSM<br/>S0→S4 → GROUNDED / APORIA]
-    CLI --> C[Part C<br/>Galilean sandbox<br/>Salviati · Simplicio · Sagredo]
-    C --> D[Part D<br/>Bias audit<br/>single vs debate]
-    A & B & C & D --> L[RunLog]
-    L --> T[05_Execution_Transcript.txt]
-    L --> R[logs/rpc_trace.jsonl]
+    CLI["Engine (04)"] --> P["Providers<br/>Claude · Gemini<br/>ChatGPT · offline"]
+    CLI --> A["Part A<br/>Probes"]
+    CLI --> B["Part B<br/>Socratic FSM"]
+    CLI --> C["Part C<br/>Debate"]
+    C --> D["Part D<br/>Bias audit"]
+    A & B & C & D --> L["RunLog"]
+    L --> T["Transcript (05)"]
+    L --> R["RPC trace"]
 ```
 
 - **One provider interface.** `LLM.complete(system, prompt, role)` hides the three SDKs. The `role` tag routes the offline model and labels the logs.
 - **Enforced state machine.** The `TRANSITIONS` table is checked on every move, and illegal moves raise `-32005`.
 - **Separate referee.** Contradiction verdicts come from an independent JSON-only judge, not from the questioner (see `02`, §2).
 - **Offline mode is labelled.** Its transcript and trace go to `logs/offline_*`, so a scripted run can never overwrite the real `05_Execution_Transcript.txt`.
-- **Tests.** `tests/` has 17 offline tests: halting paths, legal transitions, JSON-RPC validity, malformed-verdict retry, debate order and the bias audit.
+- **Tests.** `tests/` has 18 offline tests: halting paths, legal transitions, JSON-RPC validity, malformed-verdict retry, debate order, the bias audit and the model fallback chain.
 
 ## Interactive presentation
 

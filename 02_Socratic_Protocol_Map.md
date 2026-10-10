@@ -34,8 +34,8 @@ Three engineering facts come out of this trace:
 stateDiagram-v2
     state "S0 · Premise" as S0
     state "S1 · Probe" as S1
-    state "S2 · Counter-example" as S2
-    state "S3 · Contradiction?" as S3
+    state "S2 · Example" as S2
+    state "S3 · Check" as S3
     state "S4 · Refine" as S4
     state "GROUNDED" as G
     state "APORIA" as A
