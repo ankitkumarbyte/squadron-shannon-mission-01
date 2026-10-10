@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+logs/offline_*
+.DS_Store
+logs/live_run_console.txt
+logs/my_test*
+.claude/

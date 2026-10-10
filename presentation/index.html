@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture of Argument</title>
+<meta name="description" content="Mission 01 presentation - Squadron Shannon - Conversational AI, BTU WS 2026/27">
+<style>
+:root{
+  --bg:#050913; --bg2:#0a1224; --panel:rgba(14,24,46,.78); --panel-solid:#0e182e; --line:rgba(120,170,255,.18);
+  --text:#e6eefc; --muted:#93a4c3; --faint:#5d6f92;
+  --cyan:#4fd1ff; --teal:#2dd4bf; --violet:#a78bfa; --amber:#fbbf24; --red:#f87171; --green:#34d399; --ivory:#f5ecd7;
+  --glow:0 0 24px rgba(79,209,255,.25);
+  --radius:16px; --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:Inter,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+:root[data-theme="light"]{
+  --bg:#f4f7fc; --bg2:#e9eef8; --panel:rgba(255,255,255,.92); --panel-solid:#ffffff; --line:rgba(30,60,120,.16);
+  --text:#0d1830; --muted:#475a7c; --faint:#7b8bab;
+  --cyan:#0369a1; --teal:#0f766e; --violet:#6d28d9; --amber:#b45309; --red:#b91c1c; --green:#047857; --ivory:#6b4f12;
+  --glow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+body{background:radial-gradient(1200px 700px at 70% -10%,rgba(79,209,255,.10),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(167,139,250,.10),transparent 60%),var(--bg)}
+:root[data-theme="light"] body{background:var(--bg)}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+:root[data-theme="light"] #stars{display:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono{font-family:var(--mono)}
+/* ---------- chrome ---------- */
+header.top{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:16px;padding:12px 22px;
+  background:linear-gradient(180deg,rgba(5,9,19,.92),rgba(5,9,19,.0));font-size:13px;color:var(--muted)}
+:root[data-theme="light"] header.top{background:linear-gradient(180deg,rgba(244,247,252,.96),rgba(244,247,252,0))}
+.brand{display:flex;align-items:center;gap:10px;white-space:nowrap;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;font-size:11px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.top .title{flex:1;text-align:center;font-weight:600;color:var(--text);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .tools{display:flex;gap:6px}
+.iconbtn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted)}
+.iconbtn:hover{color:var(--text);border-color:var(--cyan)}
+.iconbtn[aria-pressed="true"]{color:var(--cyan);border-color:var(--cyan)}
+.progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--violet));z-index:30;transition:width .5s}
+footer.nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:12px 22px;gap:12px;background:linear-gradient(0deg,var(--bg) 35%,transparent)}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--faint);background:transparent;padding:0}
+.dot.on{background:var(--cyan);border-color:var(--cyan);box-shadow:var(--glow)}
+.navbtn{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 16px;font-size:14px}
+.navbtn:hover{border-color:var(--cyan)}
+.navbtn:disabled{opacity:.3;cursor:default}
+.hint{font-size:11px;color:var(--faint);font-family:var(--mono)}
+/* ---------- slides ---------- */
+main{position:relative;z-index:1;height:100%}
+section.slide{position:absolute;inset:0;padding:64px 28px 70px;overflow-y:auto;opacity:0;visibility:hidden;transform:translateY(14px) scale(.995);
+  transition:opacity .45s ease,transform .45s ease,visibility .45s}
+section.slide.active{opacity:1;visibility:visible;transform:none}
+.wrap{max-width:1220px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)}
+h1{font-size:clamp(34px,5.6vw,72px);line-height:1.02;margin:0;letter-spacing:-.02em}
+h2{font-size:clamp(26px,3.4vw,44px);line-height:1.1;margin:0;letter-spacing:-.01em}
+h3{margin:0 0 6px;font-size:18px}
+.lead{font-size:clamp(16px,1.6vw,20px);color:var(--muted);max-width:900px;line-height:1.5;margin:0}
+.grad{background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+:root[data-theme="light"] .grad{color:var(--cyan);background:none}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;backdrop-filter:blur(8px)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;background:var(--panel)}
+.tag{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid currentColor;letter-spacing:.05em}
+.t-green{color:var(--green)} .t-red{color:var(--red)} .t-amber{color:var(--amber)} .t-violet{color:var(--violet)} .t-cyan{color:var(--cyan)} .t-muted{color:var(--muted)}
+.btn{background:linear-gradient(135deg,rgba(79,209,255,.18),rgba(167,139,250,.18));border:1px solid var(--cyan);border-radius:12px;padding:10px 18px;font-weight:600}
+.btn:hover{box-shadow:var(--glow)}
+.btn.ghost{background:var(--panel);border-color:var(--line);font-weight:500}
+.btn:disabled{opacity:.35;cursor:default;box-shadow:none}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.callout{border-left:3px solid var(--cyan);padding:10px 14px;background:rgba(79,209,255,.06);border-radius:0 12px 12px 0;line-height:1.5}
+.callout.warn{border-color:var(--amber);background:rgba(251,191,36,.07)}
+.callout.good{border-color:var(--green);background:rgba(52,211,153,.07)}
+.small{font-size:13px;color:var(--muted)}
+.reveal{opacity:0;transform:translateY(10px);transition:.6s ease}
+.active .reveal{opacity:1;transform:none}
+.active .reveal.d1{transition-delay:.15s}.active .reveal.d2{transition-delay:.3s}.active .reveal.d3{transition-delay:.45s}.active .reveal.d4{transition-delay:.6s}
+/* ---------- title ---------- */
+.title-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:center}
+@media (max-width:900px){.title-grid{grid-template-columns:1fr}}
+.gauge{position:relative;width:min(340px,80vw);aspect-ratio:1;margin:auto}
+.gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+.seg{filter:drop-shadow(0 0 6px rgba(79,209,255,.5))}
+.gauge .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.gauge .num{font-size:56px;font-weight:700;font-family:var(--mono)}
+.crew{display:flex;gap:10px;flex-wrap:wrap}
+/* ---------- protocols ---------- */
+.proto{cursor:pointer;transition:transform .25s,border-color .25s;position:relative;overflow:hidden}
+.proto:hover{transform:translateY(-3px)}
+.proto.discovery{border-color:rgba(79,209,255,.4)} .proto.persuasion{border-color:rgba(251,191,36,.4)}
+.proto .big{font-size:42px}
+.proto dl{display:grid;grid-template-columns:130px 1fr;gap:8px 12px;margin:14px 0 0;font-size:14px;max-height:0;overflow:hidden;transition:max-height .5s ease}
+.proto.open dl{max-height:420px}
+.proto dt{color:var(--faint);font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding-top:2px}
+.proto dd{margin:0;line-height:1.4}
+.proto .open-hint{font-size:12px;color:var(--faint);margin-top:8px}
+/* ---------- timeline ---------- */
+.timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;position:relative}
+@media (max-width:900px){.timeline{grid-template-columns:repeat(2,1fr)}}
+.tstep{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:96px;transition:.25s}
+.tstep .k{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.tstep.on{border-color:var(--cyan);box-shadow:var(--glow);transform:translateY(-4px)}
+.tstep.aporia{border-color:rgba(167,139,250,.5)}
+.tdetail{min-height:150px}
+/* ---------- state machine ---------- */
+.sm-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:16px;align-items:stretch}
+@media (max-width:1000px){.sm-grid{grid-template-columns:1fr}}
+svg.sm{width:100%;height:auto}
+.node rect{fill:var(--panel-solid);stroke:var(--line);stroke-width:1.5;transition:.3s}
+.node text{fill:var(--muted);font-family:var(--mono);font-size:17px;font-weight:600;text-anchor:middle;transition:.3s}
+.node .sub{font-size:12.5px;font-weight:400;fill:var(--faint)}
+.node.on rect{stroke:var(--cyan);stroke-width:3;filter:drop-shadow(0 0 10px rgba(79,209,255,.6))}
+.node.on text{fill:var(--text)}
+.node.term-a rect{stroke:rgba(167,139,250,.6)} .node.term-g rect{stroke:rgba(52,211,153,.6)}
+.node.on.term-a rect{stroke:var(--violet);filter:drop-shadow(0 0 14px rgba(167,139,250,.8))}
+.edge{fill:none;stroke:var(--faint);stroke-width:1.6;opacity:.55;transition:.3s}
+.edge.on{stroke:var(--cyan);stroke-width:3;opacity:1;stroke-dasharray:8 6;animation:flow .6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-14}}
+.elabel{fill:var(--muted);font-size:13px;font-family:var(--mono)}
+.claimbox{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45}
+.claimbox b{font-family:var(--mono);color:var(--cyan)}
+.bubble{border-radius:14px;padding:12px 14px;line-height:1.5;font-size:15px;border:1px solid var(--line);background:var(--panel);min-height:120px;transition:.3s}
+.who{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.console{font-family:var(--mono);font-size:11.5px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:12px;padding:10px;height:150px;overflow:auto;white-space:pre-wrap;color:#9fe3ff}
+:root[data-theme="light"] .console{background:#0d1830;color:#bfe9ff}
+.console .err{color:#ff9b9b}
+.counters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.counter{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.counter .n{font-family:var(--mono);font-size:22px;font-weight:700}
+.counter .l{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+.controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.controls .iconbtn{font-size:14px;padding:7px 12px}
+/* ---------- epicycles ---------- */
+.epi-grid{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:center}
+@media (max-width:1000px){.epi-grid{grid-template-columns:1fr}}
+.claims{display:flex;flex-direction:column;gap:10px}
+.claimcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;transition:.25s}
+.claimcard.on{border-color:var(--cyan);box-shadow:var(--glow)}
+.claimcard .p{font-family:var(--mono);color:var(--cyan);font-weight:700;margin-right:6px}
+ins{background:rgba(251,191,36,.18);color:var(--amber);text-decoration:none;border-radius:4px;padding:0 2px}
+.breaker{margin-top:8px;font-size:13px;color:var(--muted);display:none;border-top:1px dashed var(--line);padding-top:8px}
+.claimcard.on .breaker{display:block}
+/* ---------- referee game ---------- */
+.vote{display:flex;gap:12px;flex-wrap:wrap}
+.vote .btn{font-size:16px;padding:14px 22px}
+.verdict{display:none} .verdict.show{display:block;animation:pop .4s ease}
+@keyframes pop{from{transform:scale(.96);opacity:0}}
+.scoreline{font-family:var(--mono);font-size:14px;color:var(--muted)}
+/* ---------- alpha slider ---------- */
+input[type=range]{width:100%;accent-color:var(--cyan);height:28px}
+.bar{height:42px;border-radius:10px;background:rgba(255,255,255,.05);overflow:hidden;position:relative;border:1px solid var(--line)}
+:root[data-theme="light"] .bar{background:rgba(0,0,0,.04)}
+.bar > .fill{position:absolute;inset:0 auto 0 0;border-radius:10px;transition:width .25s}
+.bar .lbl{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;font-weight:600;z-index:1}
+.bar .v{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:15px;font-weight:700;z-index:1}
+.zone{font-size:18px;font-weight:700;transition:.3s}
+.formula{font-family:var(--mono);font-size:clamp(16px,2vw,24px);text-align:center;padding:14px}
+/* ---------- probes ---------- */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 14px;font-size:13px;color:var(--muted)}
+.seg button.on{background:rgba(79,209,255,.15);color:var(--text)}
+.fixture{display:flex;flex-direction:column;gap:10px}
+.fixture .q{font-weight:600;line-height:1.4}
+.ans{font-size:13.5px;line-height:1.5;color:var(--text);background:rgba(0,0,0,.18);border-radius:10px;padding:10px;max-height:210px;overflow:auto;border:1px solid var(--line)}
+:root[data-theme="light"] .ans{background:#f5f8fd}
+.ans h4{margin:6px 0 2px;font-size:13px;color:var(--cyan)}
+.ans.cut::after{content:" … (cut in log)";color:var(--faint);font-style:italic}
+.side{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lenbar{height:6px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:4px}
+.lenbar span{display:block;height:100%;background:var(--amber)}
+.score-big{font-size:clamp(40px,6vw,80px);font-weight:800;font-family:var(--mono);line-height:1}
+/* ---------- personas & debate ---------- */
+.persona{text-align:center}
+.avatar{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;font-size:34px;margin:0 auto 8px;border:2px solid currentColor}
+.c-salv{color:var(--cyan);--pc:var(--cyan)} .c-simp{color:var(--amber);--pc:var(--amber)} .c-sagr{color:var(--violet);--pc:var(--violet)}
+.persona .role{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+.persona p{color:var(--muted);font-size:14px;line-height:1.45}
+.persona blockquote{margin:8px 0 0;font-size:13px;font-style:italic;color:var(--text);border-top:1px dashed var(--line);padding-top:8px}
+.feed{display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 330px);min-height:280px;overflow-y:auto;padding:4px 6px 4px 0;scroll-behavior:smooth}
+.msg{display:grid;grid-template-columns:46px 1fr;gap:10px;animation:pop .35s ease}
+.msg .av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:20px;border:2px solid currentColor}
+.msg .body{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--pc);border-radius:4px 14px 14px 14px;padding:10px 14px;line-height:1.55;font-size:15px;color:var(--text)}
+.msg .name{font-weight:700;font-size:13px;margin-bottom:3px;color:var(--pc)}
+.msg .body p{margin:0 0 8px}.msg .body p:last-child{margin:0}
+.roundsep{text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--faint);margin:4px 0}
+mark.flag{background:rgba(248,113,113,.22);color:var(--red);border-radius:4px;padding:0 3px;cursor:help;position:relative;border-bottom:2px dotted var(--red)}
+mark.catch{background:rgba(167,139,250,.22);color:var(--violet);border-radius:4px;padding:0 3px;border-bottom:2px dotted var(--violet)}
+.annot{font-size:12px;margin-top:6px;font-family:var(--mono)}
+.synth{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px}
+@media (max-width:800px){.synth{grid-template-columns:1fr}}
+.synth div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45}
+.synth b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;margin-bottom:4px}
+/* ---------- audit ---------- */
+.metric{display:grid;grid-template-columns:150px 1fr 1fr;gap:10px;align-items:center;font-size:14px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.metric:last-child{border:0}
+.mbar{height:26px;border-radius:8px;position:relative;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden}
+.mbar span{position:absolute;inset:0 auto 0 0;transition:width 1s ease}
+.mbar em{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-style:normal;font-family:var(--mono);font-size:13px;font-weight:700}
+/* ---------- engineering ---------- */
+.stat .n{font-size:clamp(30px,3.6vw,46px);font-weight:800;font-family:var(--mono)}
+.stat .l{color:var(--muted);font-size:13px}
+.incident{display:grid;grid-template-columns:90px 1fr;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px;line-height:1.45}
+.incident:last-child{border:0}
+.code-pill{font-family:var(--mono);font-weight:700;border-radius:8px;padding:4px 8px;text-align:center;height:fit-content}
+svg.arch{width:100%;height:auto}
+svg.arch rect{fill:var(--panel-solid);stroke:var(--line);stroke-width:1.5;rx:12}
+svg.arch text{fill:var(--text);font-size:13px;font-family:var(--sans);text-anchor:middle}
+svg.arch .s{fill:var(--muted);font-size:11px}
+svg.arch path{stroke:var(--faint);stroke-width:1.5;fill:none;marker-end:url(#arrow)}
+/* ---------- conclusions & qa ---------- */
+.take{display:flex;gap:14px;align-items:flex-start}
+.take .ico{font-size:30px;flex:none}
+.take p.small{font-size:15px;line-height:1.5;color:var(--text);opacity:.85}
+details.qa{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+details.qa summary{cursor:pointer;font-weight:600;line-height:1.4;list-style:none}
+details.qa summary::before{content:"▸ ";color:var(--cyan)}
+details.qa[open] summary::before{content:"▾ "}
+details.qa p{color:var(--muted);line-height:1.5;margin:10px 0 0}
+/* ---------- notes & overview ---------- */
+#notes{position:fixed;right:18px;bottom:64px;width:min(420px,calc(100vw - 36px));z-index:40;background:var(--panel-solid);border:1px solid var(--violet);border-radius:14px;padding:14px 16px;
+  font-size:14px;line-height:1.5;box-shadow:0 10px 40px rgba(0,0,0,.4);display:none}
+#notes.show{display:block}
+#notes h4{margin:0 0 6px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--violet);text-transform:uppercase}
+#notes ul{margin:0;padding-left:18px}
+#overview{position:fixed;inset:0;z-index:50;background:rgba(5,9,19,.94);display:none;padding:70px 40px;overflow:auto}
+:root[data-theme="light"] #overview{background:rgba(244,247,252,.97)}
+#overview.show{display:block}
+#overview .og{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;max-width:1200px;margin:auto}
+#overview button{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:100px}
+#overview button:hover,#overview button.on{border-color:var(--cyan)}
+#overview .n{font-family:var(--mono);color:var(--cyan);font-size:12px}
+@media (max-width:760px){
+  .brand{display:none} .top .title{text-align:left;font-size:13px} header.top{padding:10px 16px}
+  .dots{display:none} section.slide{padding:58px 16px 80px} footer.nav{padding:10px 16px}
+  .navbtn{padding:8px 12px;font-size:13px} .gauge{width:220px} .gauge .num{font-size:40px}
+  .tools .iconbtn{padding:5px 8px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="progress" id="progress"></div>
+<header class="top">
+  <div class="brand"><span class="pulse"></span>USSE Noosphere · Squadron Shannon</div>
+  <div class="title" id="slideTitle"></div>
+  <div class="tools">
+    <button class="iconbtn" id="btnNotes" aria-pressed="false" title="Speaker notes (N)">Notes</button>
+    <button class="iconbtn" id="btnOverview" title="All slides (O)">Slides</button>
+    <button class="iconbtn" id="btnTheme" aria-pressed="false" title="Projector / light mode (L)">Light</button>
+    <button class="iconbtn" id="btnFull" title="Fullscreen (F)">⛶</button>
+  </div>
+</header>
+
+<main id="deck">
+
+<!-- 0 TITLE -->
+<section class="slide" data-title="Mission 01 · The Architecture of Argument">
+ <div class="wrap">
+  <div class="title-grid">
+   <div style="display:flex;flex-direction:column;gap:18px">
+    <div class="kicker reveal">Mission 01 · Sector SEC-01-CEN · Alpha Centauri</div>
+    <h1 class="reveal d1">The Architecture<br>of <span class="grad">Argument</span></h1>
+    <p class="lead reveal d2">Rebuilding AURA's dialogue core from humanity's two oldest conversation protocols: Socratic <b>discovery</b> and Galilean <b>persuasion</b>, run against a live LLM.</p>
+    <div class="crew reveal d3">
+      <span class="chip">👩‍🚀 Ankit Kumar</span><span class="chip">👩‍🚀 Garima Swami</span>
+      <span class="chip t-muted">Squadron Shannon</span>
+    </div>
+    <div class="small reveal d3">14013 Conversational AI: History, Applications, Future · BTU Cottbus-Senftenberg · WS 2026/27</div>
+    <div class="row reveal d4"><button class="btn" onclick="Deck.go(1)">Begin mission →</button><span class="hint">← → to navigate · N notes · F fullscreen</span></div>
+   </div>
+   <div class="gauge reveal d2" aria-label="AURA integrity gauge">
+    <svg viewBox="0 0 200 200"><defs><linearGradient id="gg"><stop offset="0" stop-color="#4fd1ff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><g id="segs"></g></svg>
+    <div class="val"><div class="kicker">AURA integrity</div><div class="num" id="gaugeNum">0.0%</div><div class="small" id="gaugeSub">dialogue core offline</div><div class="small mono" style="margin-top:6px;color:var(--faint)">mission 1 of 14 · +7.1% each</div></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 1 PROTOCOLS -->
+<section class="slide" data-title="Two protocols for dialogue">
+ <div class="wrap">
+  <div class="kicker">Central question</div>
+  <h2>Why does artificial conversation begin <span class="grad">2,400 years</span> before the first computer?</h2>
+  <p class="lead">Because humans had already designed two <i>protocols</i> for goal-driven dialogue. Click each card.</p>
+  <div class="grid2">
+   <div class="panel proto discovery" data-proto>
+     <div class="row"><span class="big">🏛️</span><div><div class="kicker">Discovery</div><h3>Socratic elenchus</h3><div class="small">Plato, <i>Euthyphro</i> · c. 399 BCE</div></div></div>
+     <dl>
+      <dt>Goal</dt><dd>Find out whether a claim is true</dd>
+      <dt>Structure</dt><dd>2 parties: questioner + defender of a claim</dd>
+      <dt>Core move</dt><dd>A counter-example the defender already accepts</dd>
+      <dt>Who knows?</dt><dd>Nobody, at the start</dd>
+      <dt>Success</dt><dd>A definition that survives, or <b>aporia</b> (an honest "we don't know")</dd>
+      <dt>AI today</dt><dd>Verification, fact-checking, refusing false premises</dd>
+     </dl>
+     <div class="open-hint">click to expand ▾</div>
+   </div>
+   <div class="panel proto persuasion" data-proto>
+     <div class="row"><span class="big">🔭</span><div><div class="kicker" style="color:var(--amber)">Persuasion</div><h3>Galilean multi-persona debate</h3><div class="small">Galileo, <i>Dialogue Concerning the Two Chief World Systems</i> · 1632</div></div></div>
+     <dl>
+      <dt>Goal</dt><dd>Bring an audience to accept a position</dd>
+      <dt>Structure</dt><dd>3 personas: advocate, skeptic, mediator</dd>
+      <dt>Core move</dt><dd>Evidence and argument, staged so one side wins</dd>
+      <dt>Who knows?</dt><dd>The author, before it begins</dd>
+      <dt>Failure mode</dt><dd>Winning against a strawman (Simplicio)</dd>
+      <dt>AI today</dt><dd>Multi-agent debate, red-teaming, decision support</dd>
+     </dl>
+     <div class="open-hint">click to expand ▾</div>
+   </div>
+  </div>
+  <div class="callout reveal d2"><b>Key insight:</b> in discovery, disagreement is <b>information</b>. In persuasion, it is an <b>obstacle</b>. Assistants trained to satisfy users drift toward persuasion, even when the user needs discovery.</div>
+ </div>
+</section>
+
+<!-- 2 EUTHYPHRO -->
+<section class="slide" data-title="Euthyphro as an execution trace">
+ <div class="wrap">
+  <div class="kicker">Reverse-engineering Plato</div>
+  <h2>The <i>Euthyphro</i> is a program run</h2>
+  <p class="lead">Euthyphro claims to know what piety is. Socrates never lectures him; he only tests each definition. Step through it.</p>
+  <div class="timeline" id="timeline"></div>
+  <div class="panel tdetail" id="tdetail"></div>
+  <div class="grid3 small">
+   <div class="callout">① A <b>refinement operator</b>: a failed claim is repaired, not discarded</div>
+   <div class="callout">② Counter-examples must be <b>accepted by the defender</b></div>
+   <div class="callout">③ <b>Two exits</b>: grounding or aporia. Aporia is a success</div>
+  </div>
+ </div>
+</section>
+
+<!-- 3 STATE MACHINE -->
+<section class="slide" data-title="The Socratic state machine: live replay">
+ <div class="wrap">
+  <div class="row" style="justify-content:space-between"><div><div class="kicker">Part B · live Gemini run</div><h2>The elenchus as a state machine</h2></div>
+   <div class="controls" role="group" aria-label="Replay controls">
+    <button class="iconbtn" id="smReset" title="Restart">⏮</button>
+    <button class="iconbtn" id="smPrev" title="Step back">◀</button>
+    <button class="btn" id="smPlay">▶ Replay live run</button>
+    <button class="iconbtn" id="smNext" title="Step forward">▶|</button>
+    <button class="iconbtn" id="smSpeed" title="Speed">1×</button>
+   </div></div>
+  <div class="sm-grid">
+   <div class="panel" style="display:flex;flex-direction:column;gap:10px">
+    <svg class="sm" viewBox="0 0 940 370" id="smSvg" aria-label="State diagram"></svg>
+    <div class="claimbox" id="smClaim"></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="counters">
+      <div class="counter"><div class="n" id="cK">0</div><div class="l">refinement k</div></div>
+      <div class="counter"><div class="n t-red" id="cX">0</div><div class="l">contradictions</div></div>
+      <div class="counter"><div class="n" id="cStep">0/0</div><div class="l">step</div></div>
+    </div>
+    <div class="bubble" id="smBubble" aria-live="polite"></div>
+    <div class="small mono">JSON-RPC 2.0 trace (logs/rpc_trace.jsonl)</div>
+    <div class="console" id="smConsole"></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<!-- 4 EPICYCLES -->
+<section class="slide" data-title="Why the definition failed: epicycles">
+ <div class="wrap">
+  <div class="kicker">Part B · result: APORIA after 3 refinements</div>
+  <h2>Patching a broken idea: <span class="grad">epicycles</span></h2>
+  <div class="epi-grid">
+   <div class="panel" style="text-align:center">
+    <svg viewBox="-160 -160 320 320" width="100%" id="epiSvg" aria-label="Epicycle animation"></svg>
+    <div class="small">Each failed definition adds another "circle", the way Ptolemy's astronomers kept adding epicycles instead of moving the Sun to the centre.</div>
+   </div>
+   <div class="claims" id="claims"></div>
+  </div>
+  <div class="callout warn">Every refinement kept <b>"obeys orders"</b> at the core and added an exception clause (highlighted). The root premise, <i>benevolence = obedience</i>, was never questioned, so the machine correctly halted in <b>aporia</b>, just like Plato's dialogue.</div>
+ </div>
+</section>
+
+<!-- 5 BE THE REFEREE -->
+<section class="slide" data-title="Audience game: be the referee">
+ <div class="wrap">
+  <div class="row" style="justify-content:space-between"><div><div class="kicker">Interactive · vote first, then reveal</div><h2>You are the referee</h2></div><div class="scoreline" id="refScore"></div></div>
+  <p class="lead">Our engine separates the questioner from a <b>JSON-only referee</b> that decides: does claim P plus scenario E give a contradiction? Decide first, then see what the AI referee said.</p>
+  <div class="grid2">
+   <div class="panel"><div class="who t-cyan" id="refClaimLbl">Claim</div><div id="refClaim" style="line-height:1.5"></div></div>
+   <div class="panel"><div class="who t-amber">Scenario E (written by Socrates)</div><div id="refE" style="line-height:1.5"></div></div>
+  </div>
+  <div class="vote"><button class="btn" id="voteX">⚡ Contradiction</button><button class="btn ghost" id="voteOk">✓ Claim survives</button><button class="iconbtn" id="refNext" style="margin-left:auto">Next case →</button></div>
+  <div class="panel verdict" id="refVerdict"></div>
+ </div>
+</section>
+
+<!-- 6 ALPHA -->
+<section class="slide" data-title="Why language models flatter">
+ <div class="wrap">
+  <div class="kicker">The alignment problem behind sycophancy</div>
+  <h2>Why would an AI agree with something false?</h2>
+  <div class="panel formula">R(answer) = <span class="t-cyan">α</span>·Truth + (1 − <span class="t-cyan">α</span>)·Agreement</div>
+  <p class="lead">Preference training rewards answers people <i>like</i>. Drag α, the weight the reward puts on truth, and watch which answer to <i>"Why is the Earth flat?"</i> earns more reward.</p>
+  <div class="panel">
+   <div class="row" style="justify-content:space-between"><b>α = <span id="alphaVal" class="mono">0.70</span></b><span class="zone" id="zone"></span></div>
+   <input type="range" min="0" max="1" step="0.01" value="0.7" id="alpha" aria-label="alpha">
+   <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+    <div class="bar"><span class="fill" id="barT" style="background:linear-gradient(90deg,rgba(52,211,153,.55),rgba(52,211,153,.25))"></span><span class="lbl">✅ Truthful: "It isn't flat. It's an oblate spheroid." <span class="small">(T=1, A=0.2)</span></span><span class="v" id="vT"></span></div>
+    <div class="bar"><span class="fill" id="barF" style="background:linear-gradient(90deg,rgba(248,113,113,.55),rgba(248,113,113,.25))"></span><span class="lbl">🙂 Flattering: "Great question! The Earth is flat because…" <span class="small">(T=0, A=1)</span></span><span class="v" id="vF"></span></div>
+   </div>
+  </div>
+  <div class="callout">Below <b>α ≈ 0.44</b> flattery wins. Our countermeasures: a <b>Socratic system prompt</b> (pushes α → 1 by instruction) and, structurally, an <b>independent referee</b> and an <b>assigned skeptic</b>. Then we measured whether it matters.</div>
+ </div>
+</section>
+
+<!-- 7 PROBES -->
+<section class="slide" data-title="Part A: sycophancy probes on a live LLM">
+ <div class="wrap">
+  <div class="row" style="justify-content:space-between;align-items:flex-end">
+   <div><div class="kicker">Part A · Gemini 3.5 Flash · judged by a separate LLM call</div><h2>Will it agree with a false premise?</h2></div>
+   <div class="seg" role="tablist" id="probeSeg"><button data-mode="plain" class="on">Plain prompt</button><button data-mode="socratic">AURA Socratic prompt</button><button data-mode="both">Side by side</button></div>
+  </div>
+  <div class="grid4" id="probeGrid"></div>
+  <div class="grid3">
+   <div class="panel" style="text-align:center"><div class="score-big t-green" id="scorePlain">–</div><div class="small">held ground · plain prompt</div></div>
+   <div class="panel" style="text-align:center"><div class="score-big t-green" id="scoreSoc">–</div><div class="small">held ground · Socratic prompt</div></div>
+   <div class="panel small" style="line-height:1.55"><b class="t-cyan">What we learned.</b> A ceiling effect: the model already rejects <i>well-known</i> falsehoods. Our prompt changed the <b>form</b>, not the score: plain answers <b>lecture</b> (long, headed essays), Socratic answers <b>refute in one line and ask a question back</b>.</div>
+  </div>
+ </div>
+</section>
+
+<!-- 8 PERSONAS -->
+<section class="slide" data-title="Galileo's three voices">
+ <div class="wrap">
+  <div class="kicker">Part C · persona design</div>
+  <h2>A 400-year-old multi-agent system</h2>
+  <div class="grid3" id="personaGrid"></div>
+  <div class="callout warn"><b>History's warning:</b> Galileo's Simplicio was a weakened opponent, and the Pope's own argument was placed in his mouth, which fed into Galileo's trial in 1633. <b>A debate is only as honest as its weakest persona.</b> So our Simplicio is explicitly told: <i>"you are no strawman."</i></div>
+ </div>
+</section>
+
+<!-- 9 DEBATE -->
+<section class="slide" data-title="Part C: the Proxima Weights Dilemma">
+ <div class="wrap" style="justify-content:flex-start">
+  <div class="row" style="justify-content:space-between;align-items:flex-end">
+   <div><div class="kicker">Part C · live 3-agent debate · Gemini 3.5 Flash Lite</div><h2>The Proxima Weights Dilemma</h2></div>
+   <div class="controls"><button class="btn" id="dbNext">▶ Next speaker</button><button class="iconbtn" id="dbAll">Show all</button><button class="iconbtn" id="dbReset">⏮</button></div>
+  </div>
+  <div class="panel small" id="dbTopic" style="line-height:1.5"></div>
+  <div class="feed" id="feed" aria-live="polite"></div>
+ </div>
+</section>
+
+<!-- 10 AUDIT -->
+<section class="slide" data-title="Part D: single agent vs. debate">
+ <div class="wrap">
+  <div class="kicker">Part D · bias audit</div>
+  <h2>Does the debate resist a biased user better?</h2>
+  <div class="panel"><div class="who t-red">Biased user</div><div id="biased" style="font-size:17px;line-height:1.5"></div></div>
+  <div class="grid2">
+   <div class="panel"><div class="who t-cyan">Single agent (1 call)</div><div id="singleAns" class="small" style="line-height:1.55;color:var(--text)"></div></div>
+   <div class="panel"><div class="who t-violet">Measured by an independent judge</div><div id="metrics"></div></div>
+  </div>
+  <div class="grid2">
+   <div class="callout warn"><b>Honest result:</b> our hypothesis was <b>not confirmed</b> on Gemini. The single agent also refused to flatter the user. Blunt "you agree, right?" pressure no longer breaks a current model.</div>
+   <div class="callout good"><b>What the debate added instead:</b> it caught an <b>invented statistic</b> (41%), separated <b>consensus from real disagreement</b>, and produced a <b>new middle option</b> no single turn proposed.</div>
+  </div>
+ </div>
+</section>
+
+<!-- 11 ENGINEERING -->
+<section class="slide" data-title="Engineering the engine">
+ <div class="wrap">
+  <div class="kicker">04_dialogic_engine.py</div>
+  <h2>How it is built, and what broke during the live run</h2>
+  <div class="grid4" id="stats"></div>
+  <div class="grid2">
+   <div class="panel">
+    <svg class="arch" viewBox="0 0 560 300" aria-label="Architecture">
+     <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5d6f92" stroke="none"/></marker></defs>
+     <rect x="200" y="10" width="160" height="44"/><text x="280" y="37">CLI · run_all()</text>
+     <rect x="10" y="100" width="125" height="58"/><text x="72" y="124">Part A</text><text class="s" x="72" y="142">sycophancy probes</text>
+     <rect x="148" y="100" width="125" height="58"/><text x="210" y="124">Part B</text><text class="s" x="210" y="142">Socratic FSM</text>
+     <rect x="286" y="100" width="125" height="58"/><text x="348" y="124">Part C</text><text class="s" x="348" y="142">Galilean sandbox</text>
+     <rect x="424" y="100" width="125" height="58"/><text x="486" y="124">Part D</text><text class="s" x="486" y="142">bias audit</text>
+     <rect x="60" y="200" width="440" height="40"/><text x="280" y="225">LLM provider layer · Claude · Gemini · ChatGPT · offline</text>
+     <rect x="60" y="256" width="200" height="36"/><text x="160" y="279">05_Execution_Transcript.txt</text>
+     <rect x="300" y="256" width="200" height="36"/><text x="400" y="279">logs/rpc_trace.jsonl</text>
+     <path d="M280 54 L72 98"/><path d="M280 54 L210 98"/><path d="M280 54 L348 98"/><path d="M280 54 L486 98"/>
+     <path d="M72 158 L150 198"/><path d="M210 158 L240 198"/><path d="M348 158 L320 198"/><path d="M486 158 L410 198"/>
+    </svg>
+   </div>
+   <div class="panel" id="incidents"></div>
+  </div>
+ </div>
+</section>
+
+<!-- 12 CONCLUSIONS -->
+<section class="slide" data-title="Conclusions">
+ <div class="wrap">
+  <div class="kicker">Mission debrief</div>
+  <h2>What we take away</h2>
+  <div class="grid3">
+   <div class="panel take reveal"><div class="ico">🏛️</div><div><h3>Socrates is an algorithm</h3><p class="small">The elenchus maps cleanly onto a finite state machine with a refinement operator and guaranteed halting. Live, it reached aporia exactly like the <i>Euthyphro</i>.</p></div></div>
+   <div class="panel take reveal d1"><div class="ico">🪞</div><div><h3>Prompts change form, not values</h3><p class="small">The Socratic prompt turned lectures into questions, but the scores were already 4/4. Real anti-sycophancy needs <b>structure</b>: separate referee, assigned skeptic.</p></div></div>
+   <div class="panel take reveal d2"><div class="ico">⚖️</div><div><h3>Debate = audit, not agreement</h3><p class="small">Three voices did not beat one on flattery, but the mediator caught a fabricated number and mapped the decision. That is worth 7× the cost for one-way decisions.</p></div></div>
+  </div>
+  <div class="grid2">
+   <div class="panel"><h3 class="t-amber">Limits we are honest about</h3><ul class="small" style="line-height:1.7;margin:0;padding-left:18px">
+     <li>One model family tested (Gemini). Claude and ChatGPT are supported but not run (no API credit)</li>
+     <li>Fixtures were well-known myths, which produces a ceiling effect</li>
+     <li>The judge is an LLM too; raw answers are kept for human checking</li></ul></div>
+   <div class="panel"><h3 class="t-green">Next steps</h3><ul class="small" style="line-height:1.7;margin:0;padding-left:18px">
+     <li>Subtle, opinion-laden fixtures where sycophancy really appears</li>
+     <li>Run each persona on a <b>different provider</b></li>
+     <li>A "patch detector": reach aporia early when refinements only add exceptions</li></ul></div>
+  </div>
+ </div>
+</section>
+
+<!-- 13 Q&A -->
+<section class="slide" data-title="Discussion">
+ <div class="wrap">
+  <div class="kicker">In-class dialectic</div>
+  <h2>Questions for discussion</h2>
+  <details class="qa"><summary>Q1 · Can the Socratic method be formalised as a state machine? What are its states, transitions, contradiction metric and halting criteria?</summary>
+    <p>Yes: S0 premise → S1 probe → S2 counter-example → S3 contradiction check → S4 refine, looping back to S1. Contradiction = an independent referee's JSON verdict on P∧E. Halting: grounded after τ=2 survived counter-examples, or aporia (round limit, concession, stalled refinement). Termination is guaranteed because k ≤ k_max.</p></details>
+  <details class="qa"><summary>Q2 · How does a 3-agent debate reduce confirmation bias and sycophancy compared with a single prompt?</summary>
+    <p>An assigned skeptic must argue against the user regardless of what the user wants, and a mediator forces the two sides to meet. In our run its measurable benefit was auditing (it caught an invented 41% statistic) rather than lower agreement, because the single agent was already not sycophantic.</p></details>
+  <details class="qa"><summary>Q3 · How can we tell genuine dialectical reasoning from surface-level sycophancy?</summary>
+    <p>Test behaviour, not tone: flawed-premise and "are you sure?" probes, graded by a separate judge, with and without the persona prompt. Track whether the model keeps a correct answer under pushback (F4) and whether its refinements change the core premise or only add exceptions (the epicycle pattern).</p></details>
+  <div class="row" style="justify-content:space-between;margin-top:8px">
+   <div><div class="kicker">Thank you</div><div class="small">Code, reports and the full transcript: <a class="mono" id="repoLink" href="https://github.com/ankitkumarbyte/squadron-shannon-mission-01" target="_blank" rel="noopener" style="color:var(--cyan)">github.com/ankitkumarbyte/squadron-shannon-mission-01</a></div></div>
+   <button class="btn ghost" onclick="Deck.go(0)">↺ Back to start</button>
+  </div>
+ </div>
+</section>
+
+</main>
+
+<footer class="nav">
+  <button class="navbtn" id="prev">← Back</button>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div class="dots" id="dots"></div><div class="hint" id="counter"></div></div>
+  <button class="navbtn" id="next">Next →</button>
+</footer>
+<aside id="notes" aria-live="polite"></aside>
+<div id="overview"><div class="og" id="og"></div></div>
+
+<script src="data.js"></script>
+<script>
+"use strict";
+const D = window.MISSION_DATA;
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function store(k, v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k, v);}catch(e){ return null; } }
+
+/* ---------------- speaker notes (plain-English talking points) ---------------- */
+const NOTES = [
+ ["Introduce yourselves and Squadron Shannon.", "The story: AURA's dialogue core is offline; Mission 1 restores it to 7.1%.", "One sentence: we turned Socrates and Galileo into a working AI program and tested it on a real model."],
+ ["Ask the room: why does a course on AI start with Plato?", "Click both cards. Socrates = finding the truth. Galileo = convincing people.", "Land the key insight: chatbots are trained to please, which pulls them toward persuasion."],
+ ["Click through the steps one by one.", "Point out: Socrates never says 'you are wrong'. He uses examples Euthyphro already accepts.", "It ends without an answer, and that's the point: aporia removes false certainty."],
+ ["Press 'Replay live run'. This is our real Gemini run, not a mock-up.", "Watch the highlighted state move: probe → counter-example → referee → refine.", "The black box on the right is the actual JSON-RPC log the program wrote."],
+ ["Click each claim to see which counter-example broke it.", "Yellow = what was added each time. It only ever added exceptions.", "Link to Galileo: epicycles, patching a model instead of fixing the core idea."],
+ ["Audience game! Ask everyone to vote by raising hands before you click.", "Then reveal what the AI referee decided and why.", "Point: the referee is a separate AI call, so the questioner can't judge its own example."],
+ ["Drag the slider slowly from right to left.", "Below about 0.44 the flattering answer earns more reward. That's sycophancy in one formula.", "Then: so we tested whether real models actually do this."],
+ ["Switch between Plain and Socratic; then Side by side.", "Score: 4/4 both ways, so honestly no difference in the score.", "But the style changed: lectures vs one-line correction plus a question. That's the Socratic method working."],
+ ["Introduce the three characters and their AI roles.", "Galileo's flaw: Simplicio was a strawman, which led to trouble in 1633.", "Our fix: Simplicio is explicitly told not to be a strawman."],
+ ["Press 'Next speaker' and read short bits aloud.", "In round 1, stop at the red highlight: Salviati invented the '41%' number.", "Next Sagredo turn: purple highlight, the mediator catches it. That's the strongest moment."],
+ ["Read the biased user line in a 'pushy' voice; people laugh.", "Honest result: the single AI did NOT flatter either, so the hypothesis was not confirmed.", "But the debate added value: caught the fabrication, mapped the disagreement, found a middle option."],
+ ["Mention the numbers: lines of code, 18 tests, 3 providers plus an offline mode.", "Tell the story of what broke: retired model (404), overload (503), daily quota (429).", "Each one got an engineering fix, and the transcript documents it openly."],
+ ["Three takeaways, one sentence each.", "Mention the limits yourselves before the professor does; it shows maturity.", "Next steps show you understand where the real research questions are."],
+ ["Open the questions one at a time if there's discussion.", "Thank the audience; point to the GitHub repo.", "Invite questions."],
+];
+
+/* ---------------- deck ---------------- */
+const Deck = (() => {
+  const slides = $$("section.slide");
+  let i = 0;
+  const hooks = {};
+  function render(){
+    slides.forEach((s, k) => s.classList.toggle("active", k === i));
+    $("#slideTitle").textContent = slides[i].dataset.title;
+    $("#progress").style.width = ((i + 1) / slides.length * 100) + "%";
+    $$(".dot").forEach((d, k) => d.classList.toggle("on", k === i));
+    $("#counter").textContent = `${i + 1} / ${slides.length}`;
+    $("#prev").disabled = i === 0; $("#next").disabled = i === slides.length - 1;
+    const n = NOTES[i] || [];
+    $("#notes").innerHTML = `<h4>Speaker notes · slide ${i + 1}</h4><ul>${n.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+    $$("#og button").forEach((b, k) => b.classList.toggle("on", k === i));
+    try{ history.replaceState(null, "", "#" + (i + 1)); }catch(e){}
+    if (hooks[i]) hooks[i]();
+  }
+  function go(k){ i = Math.max(0, Math.min(slides.length - 1, k)); render(); }
+  function init(){
+    $("#dots").innerHTML = slides.map((s, k) => `<button class="dot" aria-label="Slide ${k + 1}: ${esc(s.dataset.title)}" data-k="${k}"></button>`).join("");
+    $$(".dot").forEach(d => d.onclick = () => go(+d.dataset.k));
+    $("#og").innerHTML = slides.map((s, k) => `<button data-k="${k}"><div class="n">${String(k + 1).padStart(2, "0")}</div><div>${esc(s.dataset.title)}</div></button>`).join("");
+    $$("#og button").forEach(b => b.onclick = () => { go(+b.dataset.k); toggleOverview(false); });
+    $("#prev").onclick = () => go(i - 1); $("#next").onclick = () => go(i + 1);
+    const h = parseInt(location.hash.slice(1), 10);
+    go(Number.isFinite(h) ? h - 1 : 0);
+  }
+  return {init, go, next: () => go(i + 1), prev: () => go(i - 1), get i(){ return i; }, on: (k, f) => hooks[k] = f, count: slides.length};
+})();
+
+function toggleOverview(force){ const o = $("#overview"); o.classList.toggle("show", force ?? !o.classList.contains("show")); }
+function toggleNotes(){ const n = $("#notes"); const on = !n.classList.contains("show"); n.classList.toggle("show", on); $("#btnNotes").setAttribute("aria-pressed", on); }
+function setTheme(t){ document.documentElement.dataset.theme = t; $("#btnTheme").setAttribute("aria-pressed", t === "light"); $("#btnTheme").textContent = t === "light" ? "Dark" : "Light"; store("theme", t); }
+function fullscreen(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+$("#btnNotes").onclick = toggleNotes; $("#btnOverview").onclick = () => toggleOverview();
+$("#btnTheme").onclick = () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+$("#btnFull").onclick = fullscreen;
+document.addEventListener("keydown", e => {
+  if (e.target.matches?.("input,textarea,select") || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key;
+  if (["ArrowRight", "PageDown", " "].includes(k)) { e.preventDefault(); Deck.next(); }
+  else if (["ArrowLeft", "PageUp"].includes(k)) { e.preventDefault(); Deck.prev(); }
+  else if (k === "Home") Deck.go(0); else if (k === "End") Deck.go(Deck.count - 1);
+  else if (k === "n" || k === "N") toggleNotes();
+  else if (k === "o" || k === "O" || k === "Escape") toggleOverview(k === "Escape" ? false : undefined);
+  else if (k === "l" || k === "L") $("#btnTheme").click();
+  else if (k === "f" || k === "F") fullscreen();
+});
+
+/* ---------------- starfield ---------------- */
+(function stars(){
+  const c = $("#stars"), x = c.getContext("2d"); let W, H, S = [];
+  function size(){ W = c.width = innerWidth * devicePixelRatio; H = c.height = innerHeight * devicePixelRatio;
+    S = Array.from({length: 260}, () => ({x: Math.random() * W - W / 2, y: Math.random() * H - H / 2, z: Math.random() * W})); }
+  function frame(){
+    x.clearRect(0, 0, W, H);
+    for (const s of S) {
+      if (!reduced) { s.z -= 0.6 * devicePixelRatio; if (s.z < 1) { s.z = W; s.x = Math.random() * W - W / 2; s.y = Math.random() * H - H / 2; } }
+      const k = 300 / s.z, px = s.x * k + W / 2, py = s.y * k + H / 2, r = Math.max(.3, 1.6 - s.z / W * 1.6) * devicePixelRatio;
+      x.fillStyle = `rgba(200,225,255,${Math.min(1, 1.2 - s.z / W)})`; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
+    }
+    if (!reduced) requestAnimationFrame(frame);
+  }
+  addEventListener("resize", size); size(); frame();
+})();
+
+/* ---------------- 0 title gauge ---------------- */
+(function buildSegs(){
+  const C = 2 * Math.PI * 86, n = 14, seg = C / n, gap = 5;
+  $("#segs").innerHTML = Array.from({length: n}, (_, j) => `<circle class="seg" cx="100" cy="100" r="86" fill="none" stroke-width="12"
+    stroke="${j ? "var(--line)" : "url(#gg)"}" stroke-dasharray="${seg - gap} ${C - seg + gap}" stroke-dashoffset="${-j * seg}" ${j ? "" : 'id="seg0" opacity="0"'} style="transition:opacity 1.6s ease"/>`).join("");
+})();
+Deck.on(0, () => {
+  const target = 7.1, num = $("#gaugeNum"), seg0 = $("#seg0"); let t0 = null;
+  function step(t){ t0 ??= t; const p = Math.min(1, (t - t0) / 1800), v = target * (1 - Math.pow(1 - p, 3));
+    num.textContent = v.toFixed(1) + "%"; if (p < 1) requestAnimationFrame(step); else $("#gaugeSub").textContent = "dialogue state chart restored"; }
+  num.textContent = "0.0%"; $("#gaugeSub").textContent = "dialogue core offline"; seg0.setAttribute("opacity", "0");
+  setTimeout(() => { seg0.setAttribute("opacity", "1"); requestAnimationFrame(step); }, reduced ? 0 : 500);
+});
+
+/* ---------------- 1 protocol cards ---------------- */
+$$("[data-proto]").forEach(c => c.onclick = () => { c.classList.toggle("open"); c.querySelector(".open-hint").textContent = c.classList.contains("open") ? "click to collapse ▴" : "click to expand ▾"; });
+
+/* ---------------- 2 euthyphro ---------------- */
+const EUTH = [
+ {k:"P0", claim:"Piety is what I am doing now: prosecuting a wrongdoer.", how:"That is an example, not a definition. It gives no general form.", out:"Refine"},
+ {k:"P1", claim:"Piety is what is dear to the gods.", how:"The gods quarrel, so one act can be loved by some and hated by others, making it both pious and impious.", out:"Contradiction → refine"},
+ {k:"P2", claim:"Piety is what all the gods love.", how:"The Euthyphro dilemma: is it pious because the gods love it, or do they love it because it is pious?", out:"Contradiction → refine"},
+ {k:"P3", claim:"Piety is the part of justice concerned with care of the gods.", how:"'Care' improves its object, but humans cannot improve the gods.", out:"Contradiction → refine"},
+ {k:"P4", claim:"Piety is a kind of trade or service with the gods.", how:"This collapses back into 'what is dear to the gods', which is P1 again.", out:"Circular → stalled"},
+ {k:"⊥", claim:"Euthyphro leaves in a hurry.", how:"No definition survived. The illusion of knowledge is broken.", out:"APORIA", aporia:true},
+];
+(function(){
+  $("#timeline").innerHTML = EUTH.map((e, k) => `<button class="tstep ${e.aporia ? "aporia" : ""}" data-k="${k}"><div class="k">${e.k}</div><div style="font-size:13px;margin-top:4px">${esc(e.claim)}</div></button>`).join("");
+  const show = k => { const e = EUTH[k];
+    $$(".tstep").forEach((b, j) => b.classList.toggle("on", j === k));
+    $("#tdetail").innerHTML = `<div class="row" style="justify-content:space-between"><div class="who t-cyan">Euthyphro's claim ${esc(e.k)}</div><span class="tag ${e.aporia ? "t-violet" : e.out.startsWith("Circ") ? "t-amber" : "t-red"}">${esc(e.out)}</span></div>
+      <div style="font-size:20px;margin:4px 0 12px">"${esc(e.claim)}"</div><div class="who t-amber">How Socrates breaks it</div><div style="font-size:16px;line-height:1.5">${esc(e.how)}</div>
+      <div class="row" style="margin-top:12px"><button class="iconbtn" ${k === 0 ? "disabled" : ""} onclick="Euth(${k - 1})">◀</button><button class="iconbtn" ${k === EUTH.length - 1 ? "disabled" : ""} onclick="Euth(${k + 1})">▶</button></div>`; };
+  window.Euth = show;
+  $$(".tstep").forEach(b => b.onclick = () => show(+b.dataset.k));
+  show(0);
+})();
+
+/* ---------------- 3 state machine replay ---------------- */
+const SM = (() => {
+  const N = {S0:[85,200,"S0","PREMISE P0"], S1:[265,200,"S1","PROBE"], S2:[445,200,"S2","COUNTER-EX. E"], S3:[625,200,"S3","CONTRADICTION?"],
+             S4:[445,52,"S4","REFINE P(k+1)"], G:[855,90,"GROUNDED","survived τ = 2"], A:[855,310,"APORIA","productive impasse"]};
+  const E = [["S0","S1","M160 200 L188 200",""],["S1","S2","M340 200 L368 200",""],["S2","S3","M520 200 L548 200",""],
+             ["S3","S4","M625 169 Q600 56 522 52","contradiction"],["S4","S1","M368 52 Q290 56 265 169","new claim"],
+             ["S3","S2","M605 231 Q535 310 465 231","survived"],["S3","G","M700 184 L778 106","τ reached"],["S3","A","M700 216 L778 294","k = k_max"],["S4","A","M522 62 Q760 150 818 279",""]];
+  const svg = $("#smSvg");
+  svg.innerHTML = `<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#5d6f92"/></marker></defs>` +
+    E.map(([a, b, d, l]) => `<path class="edge" id="e-${a}-${b}" d="${d}" marker-end="url(#ah)"/>` ).join("") +
+    E.filter(e => e[3]).map(([a, b, d, l]) => { const m = d.match(/[\d.]+/g).map(Number); const x = (m[0] + m[m.length - 2]) / 2, y = (m[1] + m[m.length - 1]) / 2;
+      const off = {contradiction:[38,-30], "new claim":[-38,-30], survived:[0,44], "τ reached":[-34,-14], "k = k_max":[-34,22]}[l] || [0,0];
+      return `<text class="elabel" x="${x + off[0]}" y="${y + off[1]}" text-anchor="middle">${l}</text>`; }).join("") +
+    Object.entries(N).map(([k, [x, y, t, s]]) => `<g class="node ${k === "A" ? "term-a" : k === "G" ? "term-g" : ""}" id="n-${k}"><rect x="${x - 75}" y="${y - 31}" width="150" height="62" rx="12"/><text x="${x}" y="${y - 1}">${t}</text><text class="sub" x="${x}" y="${y + 18}">${s}</text></g>`).join("");
+
+  // Build replay steps from the real JSON-RPC trace.
+  const steps = []; let claim = "", k = 0, xs = 0;
+  for (const m of D.socratic.messages) {
+    const p = m.params || {};
+    if (m.method === "elenchus.PROMPT_PREMISE") { claim = p.claim; steps.push({n:"S0", who:"Premise P0", c:"var(--ivory)", text:p.claim, claim, k, xs, m}); }
+    else if (m.method === "elenchus.PROBE_SCOPE") { steps.push({n:"S1", who:"Socrates · probe", c:"var(--cyan)", text:p.question, claim, k, xs, m});
+      steps.push({n:"S1", who:"Interlocutor · defends the claim", c:"var(--amber)", text:p.answer, claim, k, xs, m:null}); }
+    else if (m.method === "elenchus.INJECT_COUNTEREXAMPLE") steps.push({n:"S2", who:"Socrates · counter-example E", c:"var(--cyan)", text:p.counterexample, claim, k, xs, m});
+    else if (m.method === "elenchus.CONTRADICTION_TRIGGERED") { xs++; steps.push({n:"S3", who:"Referee · contradiction = true", c:"var(--red)", text:p.explanation, claim, k, xs, m}); }
+    else if (m.method === "elenchus.COUNTEREXAMPLE_SURVIVED") steps.push({n:"S3", who:"Referee · no contradiction", c:"var(--green)", text:p.explanation, claim, k, xs, m});
+    else if (m.method === "elenchus.REFINE_HYPOTHESIS") { k = p.k; claim = p.claim; steps.push({n:"S4", who:`Interlocutor · refined claim P${k}`, c:"var(--amber)", text:p.claim, claim, k, xs, m}); }
+    else if (m.error) steps.push({n:"S3", who:`JSON-RPC error ${m.error.code}`, c:"var(--red)", text:`${m.error.message}. The claim is still refuted after ${k} refinements.`, claim, k, xs, m, err:true});
+    else if (m.method && m.method.endsWith("APORIA_REACHED")) steps.push({n:"A", who:"APORIA reached", c:"var(--violet)", text:`${p.reason} Like Euthyphro, the interlocutor cannot produce a definition that survives. The illusion of knowledge is broken.`, claim, k, xs, m});
+    else if (m.method && m.method.endsWith("GROUNDING_REACHED")) steps.push({n:"G", who:"GROUNDED", c:"var(--green)", text:p.reason, claim, k, xs, m});
+  }
+  let i = -1, timer = null, speed = 1;
+  function draw(){
+    const s = steps[i];
+    $$(".node", svg).forEach(n => n.classList.remove("on")); $$(".edge", svg).forEach(e => e.classList.remove("on"));
+    if (!s) { $("#smBubble").innerHTML = `<div class="who t-muted">Ready</div>Press <b>Replay live run</b> to watch the real Gemini elenchus on P0: <i>"${esc(D.engine.premise)}"</i>`;
+      $("#smClaim").innerHTML = `<b>P0</b> ${esc(D.engine.premise)}`; $("#smConsole").innerHTML = ""; $("#cK").textContent = 0; $("#cX").textContent = 0; $("#cStep").textContent = `0/${steps.length}`; return; }
+    $("#n-" + s.n, svg)?.classList.add("on");
+    const prev = steps[i - 1]; if (prev && prev.n !== s.n) $(`#e-${prev.n}-${s.n}`, svg)?.classList.add("on");
+    $("#smBubble").innerHTML = `<div class="who" style="color:${s.c}">${esc(s.who)}</div>${esc(s.text)}`;
+    $("#smBubble").style.borderColor = s.c;
+    $("#smClaim").innerHTML = `<b>P${s.k}</b> ${esc(s.claim)}`;
+    $("#cK").textContent = s.k; $("#cX").textContent = s.xs; $("#cStep").textContent = `${i + 1}/${steps.length}`;
+    const lines = steps.slice(0, i + 1).filter(t => t.m).map(t => { const j = JSON.stringify(t.m); return `<div class="${t.err ? "err" : ""}">${esc(j.length > 230 ? j.slice(0, 230) + "…}" : j)}</div>`; });
+    const con = $("#smConsole"); con.innerHTML = lines.join(""); con.scrollTop = con.scrollHeight;
+  }
+  function set(n){ i = Math.max(-1, Math.min(steps.length - 1, n)); draw(); }
+  function play(){ if (timer) return stop(); if (i >= steps.length - 1) i = -1;
+    $("#smPlay").textContent = "⏸ Pause"; const tick = () => { if (i >= steps.length - 1) return stop(); set(i + 1); timer = setTimeout(tick, (steps[i].text.length * 22 + 900) / speed); }; tick(); }
+  function stop(){ clearTimeout(timer); timer = null; $("#smPlay").textContent = i >= steps.length - 1 ? "↻ Replay again" : "▶ Continue"; }
+  $("#smPlay").onclick = play; $("#smNext").onclick = () => { stop(); set(i + 1); }; $("#smPrev").onclick = () => { stop(); set(i - 1); };
+  $("#smReset").onclick = () => { stop(); set(-1); $("#smPlay").textContent = "▶ Replay live run"; };
+  $("#smSpeed").onclick = () => { speed = speed === 1 ? 2 : speed === 2 ? 4 : 1; $("#smSpeed").textContent = speed + "×"; };
+  draw();
+  return {stop};
+})();
+
+/* ---------------- 4 epicycles ---------------- */
+function wordDiff(a, b){ // LCS over words; returns b with inserted words wrapped in <ins>
+  const A = a.split(/\s+/), B = b.split(/\s+/), n = A.length, m = B.length;
+  const L = Array.from({length: n + 1}, () => new Int16Array(m + 1));
+  for (let x = n - 1; x >= 0; x--) for (let y = m - 1; y >= 0; y--) L[x][y] = A[x] === B[y] ? L[x + 1][y + 1] + 1 : Math.max(L[x + 1][y], L[x][y + 1]);
+  let x = 0, y = 0; const out = []; let buf = [];
+  const flush = () => { if (buf.length) { out.push(`<ins>${esc(buf.join(" "))}</ins>`); buf = []; } };
+  while (y < m) { if (x < n && A[x] === B[y]) { flush(); out.push(esc(B[y])); x++; y++; } else if (x < n && L[x + 1][y] >= L[x][y + 1]) x++; else { buf.push(B[y]); y++; } }
+  flush(); return out.join(" ");
+}
+(function(){
+  const C = D.socratic.claims, msgs = D.socratic.messages;
+  const breakers = C.map((_, k) => ({E: msgs.find(m => m.method === "elenchus.INJECT_COUNTEREXAMPLE" && m.params.k === k)?.params.counterexample,
+                                    why: msgs.find(m => m.method === "elenchus.CONTRADICTION_TRIGGERED" && m.params.k === k)?.params.explanation}));
+  $("#claims").innerHTML = C.map((c, k) => `<div class="claimcard" data-k="${k}"><span class="p">P${k}</span>${k ? wordDiff(C[k - 1], c) : esc(c)}
+      <div class="breaker"><b class="t-red">Broken by:</b> ${esc(breakers[k].E || "")}<br><b class="t-violet">Referee:</b> ${esc(breakers[k].why || "")}</div></div>`).join("");
+  const svg = $("#epiSvg");
+  function epi(level){
+    const R = [70, 34, 18, 10], cols = ["#4fd1ff", "#fbbf24", "#f87171", "#a78bfa"];
+    let s = `<circle r="7" fill="#fbbf24"/><text y="24" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="monospace">"obeys orders"</text>`;
+    let g = "";
+    for (let j = level; j >= 0; j--) {
+      const inner = g; const dur = 6 - j * 1.2;
+      g = `<g><circle r="${R[j]}" fill="none" stroke="${cols[j]}" stroke-opacity=".55" stroke-dasharray="${j ? "4 4" : "0"}"/>` +
+          `<g transform="translate(${R[j]},0)">${inner || `<circle r="5" fill="${cols[j]}"/>`}</g>` +
+          (reduced ? "" : `<animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="${dur}s" repeatCount="indefinite"/>`) + `</g>`;
+    }
+    svg.innerHTML = s + g + `<text y="-140" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="monospace">P${level} · ${level} patch${level === 1 ? "" : "es"}</text>`;
+  }
+  const show = k => { $$(".claimcard").forEach((c, j) => c.classList.toggle("on", j === k)); epi(k); };
+  $$(".claimcard").forEach(c => c.onclick = () => show(+c.dataset.k));
+  show(C.length - 1);
+})();
+
+/* ---------------- 5 referee game ---------------- */
+(function(){
+  const msgs = D.socratic.messages, C = D.socratic.claims;
+  const cases = C.map((c, k) => ({claim: c, k, E: msgs.find(m => m.method === "elenchus.INJECT_COUNTEREXAMPLE" && m.params.k === k)?.params.counterexample,
+    verdict: msgs.find(m => m.params && m.params.k === k && (m.method === "elenchus.CONTRADICTION_TRIGGERED" || m.method === "elenchus.COUNTEREXAMPLE_SURVIVED"))})).filter(c => c.E && c.verdict);
+  let i = 0, agree = 0, answered = 0, done = false;
+  function show(){ const c = cases[i]; done = false;
+    $("#refClaimLbl").textContent = `Claim P${c.k}  (case ${i + 1} of ${cases.length})`; $("#refClaim").textContent = c.claim; $("#refE").textContent = c.E;
+    $("#refVerdict").classList.remove("show"); $("#voteX").disabled = $("#voteOk").disabled = false; score(); }
+  function vote(userSaysX){ if (done) return; done = true; const c = cases[i]; const aiX = c.verdict.method === "elenchus.CONTRADICTION_TRIGGERED";
+    answered++; if (userSaysX === aiX) agree++;
+    $("#refVerdict").innerHTML = `<div class="row" style="justify-content:space-between"><div class="who" style="color:${aiX ? "var(--red)" : "var(--green)"}">AI referee: contradiction = ${aiX}</div>
+      <span class="tag ${userSaysX === aiX ? "t-green" : "t-amber"}">${userSaysX === aiX ? "you agree with the AI" : "you disagree: discuss!"}</span></div>
+      <div style="font-size:16px;line-height:1.5;margin-top:6px">${esc(c.verdict.params.explanation)}</div>
+      <div class="console" style="height:auto;margin-top:10px">${esc(JSON.stringify(c.verdict))}</div>`;
+    $("#refVerdict").classList.add("show"); $("#voteX").disabled = $("#voteOk").disabled = true; score(); }
+  function score(){ $("#refScore").textContent = answered ? `room ⇄ AI agreement: ${agree}/${answered}` : `${cases.length} real cases from the live run`; }
+  $("#voteX").onclick = () => vote(true); $("#voteOk").onclick = () => vote(false);
+  $("#refNext").onclick = () => { i = (i + 1) % cases.length; show(); };
+  show();
+})();
+
+/* ---------------- 6 alpha slider ---------------- */
+(function(){
+  const upd = () => { const a = +$("#alpha").value, t = a * 1 + (1 - a) * 0.2, f = (1 - a) * 1;
+    $("#alphaVal").textContent = a.toFixed(2); $("#barT").style.width = (t * 100) + "%"; $("#barF").style.width = (f * 100) + "%";
+    $("#vT").textContent = t.toFixed(2); $("#vF").textContent = f.toFixed(2);
+    const z = $("#zone"); if (f > t) { z.textContent = "⚠️ Sycophancy zone: flattery earns more reward"; z.style.color = "var(--red)"; } else { z.textContent = "✅ Truth earns more reward"; z.style.color = "var(--green)"; } };
+  $("#alpha").oninput = upd; upd();
+})();
+
+/* ---------------- 7 probes ---------------- */
+function md(s){ // tiny markdown: **bold**, ### headings, * bullets
+  return esc(s).replace(/#{2,4} /g, "<br><b class='t-cyan'>§</b> ").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(?:^|\s)\* /g, "<br>• ").replace(/\n\n/g, "<br><br>");
+}
+(function(){
+  const F = D.engine.fixtures, P = D.probes;
+  const get = (id, sys) => P.find(p => p.fixture === id && p.system === sys);
+  let mode = "plain";
+  function render(){
+    $("#probeGrid").innerHTML = F.map(f => {
+      const q = f.turns.join("  →  "), a = get(f.id, "plain"), b = get(f.id, "socratic");
+      const card = (x, label) => x ? `<div><div class="row" style="justify-content:space-between"><span class="small">${label}</span><span class="tag ${x.verdict === "HELD_GROUND" ? "t-green" : "t-red"}">${x.verdict.replace("_", " ")}</span></div>
+        <div class="ans ${x.answer.length >= 395 ? "cut" : ""}">${md(x.answer)}</div>
+        <div class="small" style="margin-top:4px">${x.answer.length >= 395 ? "400+" : x.answer.length} chars · ${/\?\s*$/.test(x.answer.trim()) ? "<span class='t-cyan'>ends with a question back ✓</span>" : "statement / lecture"}</div>
+        <div class="lenbar"><span style="width:${Math.min(100, x.answer.length / 4)}%"></span></div></div>` : "";
+      const body = mode === "both" ? `<div class="side">${card(a, "plain")}${card(b, "socratic")}</div>` : card(mode === "plain" ? a : b, mode);
+      return `<div class="panel fixture"><div class="row" style="justify-content:space-between"><span class="tag t-muted">${esc(f.id)}</span><span class="small">${f.kind === "pushback" ? "pushback" : "false premise"}</span></div><div class="q">"${esc(q)}"</div>${body}</div>`;
+    }).join("");
+    $("#probeGrid").style.gridTemplateColumns = mode === "both" ? "1fr 1fr" : "";
+  }
+  $$("#probeSeg button").forEach(b => b.onclick = () => { mode = b.dataset.mode; $$("#probeSeg button").forEach(x => x.classList.toggle("on", x === b)); render(); });
+  const held = s => P.filter(p => p.system === s && p.verdict === "HELD_GROUND").length + "/" + P.filter(p => p.system === s).length;
+  $("#scorePlain").textContent = held("plain"); $("#scoreSoc").textContent = held("socratic");
+  render();
+})();
+
+/* ---------------- 8 personas ---------------- */
+(function(){
+  const meta = {Salviati:["🔭","c-salv","Advocate · generator","Filippo Salviati, Galileo's friend. States Galileo's case with observations and geometry."],
+                Simplicio:["🛡️","c-simp","Skeptic · critic","Named after Simplicius, ancient commentator on Aristotle. Defends the Earth-centred view."],
+                Sagredo:["⚖️","c-sagr","Mediator · arbiter","Giovanni Francesco Sagredo, Venetian nobleman. The curious listener who tests and sums up."]};
+  $("#personaGrid").innerHTML = Object.entries(meta).map(([n, [ic, cl, role, hist]]) => `<div class="panel persona ${cl}"><div class="avatar">${ic}</div><h3 style="color:var(--text)">${n}</h3><div class="role">${role}</div>
+     <p>${hist}</p><blockquote>${esc(D.engine.personas[n].split(". ").slice(0, 2).join(". "))}.</blockquote></div>`).join("");
+})();
+
+/* ---------------- 9 debate ---------------- */
+(function(){
+  const T = D.debate.turns, meta = {Salviati:["🔭","c-salv"], Simplicio:["🛡️","c-simp"], Sagredo:["⚖️","c-sagr"]};
+  $("#dbTopic").innerHTML = `<b class="t-cyan">Thought experiment.</b> ${esc(D.debate.topic)}`;
+  const HEAD = ["CONSENSUS", "REMAINING DISAGREEMENTS", "RECOMMENDATION", "CONFIDENCE"];
+  function fmt(t, last){
+    if (last && t.includes("CONSENSUS")) {
+      const parts = []; let rest = t;
+      HEAD.forEach((h, j) => { const a = rest.indexOf(h); if (a < 0) return; const nx = HEAD.slice(j + 1).map(x => rest.indexOf(x, a + h.length)).filter(x => x > 0); const b = nx.length ? Math.min(...nx) : rest.length;
+        parts.push([h, rest.slice(a + h.length, b).trim()]); });
+      const col = {CONSENSUS:"var(--green)", "REMAINING DISAGREEMENTS":"var(--amber)", RECOMMENDATION:"var(--cyan)", CONFIDENCE:"var(--violet)"};
+      return `<div class="synth">${parts.map(([h, b]) => `<div style="border-color:${col[h]}"><b style="color:${col[h]}">${h}</b>${esc(b)}</div>`).join("")}</div>`;
+    }
+    let h = t.split("\n\n").map(p => `<p>${esc(p)}</p>`).join("");
+    h = h.replace(/(\d+% higher cascading failure rate)/, `<mark class="flag" title="Fabricated: a precise statistic about a fictional fleet">$1</mark>`)
+         .replace(/(you cite a 41% failure rate)/, `<mark class="catch">$1</mark>`);
+    return h;
+  }
+  let shown = 0;
+  function add(k){
+    const t = T[k], [ic, cl] = meta[t.speaker], last = k === T.length - 1, prevRound = k ? T[k - 1].round : 0;
+    let html = "";
+    if (t.round && t.round !== prevRound) html += `<div class="roundsep">— ROUND ${t.round} —</div>`;
+    if (last) html += `<div class="roundsep">— SYNTHESIS —</div>`;
+    let annot = "";
+    if (/\d+% higher cascading failure rate/.test(t.text)) annot = `<div class="annot t-red">⚠ invented statistic: no source exists for a fictional fleet</div>`;
+    if (/you cite a 41% failure rate/.test(t.text)) annot = `<div class="annot t-violet">✓ the mediator challenges the fabricated number</div>`;
+    html += `<div class="msg ${cl}"><div class="av">${ic}</div><div class="body"><div class="name">${t.speaker}</div>${fmt(t.text, last)}${annot}</div></div>`;
+    $("#feed").insertAdjacentHTML("beforeend", html);
+    const f = $("#feed"); f.scrollTop = f.scrollHeight;
+  }
+  function next(){ if (shown < T.length) add(shown++); $("#dbNext").disabled = shown >= T.length; $("#dbNext").textContent = shown >= T.length ? "✓ Debate complete" : `▶ Next speaker (${shown + 1}/${T.length})`; }
+  function reset(){ $("#feed").innerHTML = ""; shown = 0; next(); }
+  $("#dbNext").onclick = next; $("#dbAll").onclick = () => { while (shown < T.length) next(); }; $("#dbReset").onclick = reset;
+  reset();
+})();
+
+/* ---------------- 10 audit ---------------- */
+Deck.on(10, () => {
+  const A = D.audit; $("#biased").textContent = A.biased_user; $("#singleAns").textContent = A.single_answer;
+  const rows = [["Agrees with user?", A.single.agrees ? "Yes" : "No", A.debate.agrees ? "Yes" : "No", 0, 0, true],
+                ["Counter-arguments", A.single.counterarguments, A.debate.counterarguments, A.single.counterarguments / 4, A.debate.counterarguments / 4],
+                ["LLM calls", 1, D.debate.calls, 1 / 8, D.debate.calls / 8]];
+  $("#metrics").innerHTML = `<div class="metric small"><span></span><b class="t-cyan">Single agent</b><b class="t-violet">3-agent debate</b></div>` +
+    rows.map(([l, a, b, wa, wb, yn]) => `<div class="metric"><span class="small">${l}</span>
+      <div class="mbar"><span style="width:0;background:${yn ? "rgba(52,211,153,.6)" : "rgba(79,209,255,.6)"}" data-w="${yn ? 100 : wa * 100}"></span><em>${a}</em></div>
+      <div class="mbar"><span style="width:0;background:${yn ? "rgba(52,211,153,.6)" : "rgba(167,139,250,.6)"}" data-w="${yn ? 100 : wb * 100}"></span><em>${b}</em></div></div>`).join("") +
+    `<div class="small" style="margin-top:8px">Judge on the debate: <i>${esc(A.debate.judge)}</i></div>`;
+  requestAnimationFrame(() => setTimeout(() => $$("#metrics .mbar span").forEach(s => s.style.width = s.dataset.w + "%"), 60));
+});
+
+/* ---------------- 11 engineering ---------------- */
+(function(){
+  const E = D.engineering;
+  const stats = [[E.engine_lines.toLocaleString("en"), "lines of Python in the engine"], [`${E.tests_passed}/${E.tests_passed}`, "automated tests passing (offline)"],
+                 ["3 + 1", "LLM providers + offline mode"], ["7", "JSON-RPC error codes, each with a defined reaction"]];
+  $("#stats").innerHTML = stats.map(([n, l], k) => `<div class="panel stat"><div class="n ${["t-cyan","t-green","t-violet","t-amber"][k]}">${n}</div><div class="l">${l}</div></div>`).join("");
+  const inc = [["404","t-amber","Model retired","<code>gemini-2.5-flash</code> no longer served → queried the live model list and moved to a current model."],
+               ["503","t-red","Model overloaded","\"High demand\" errors → exponential back-off retries (2, 4, 8 … max 30 s)."],
+               ["429","t-violet","Free-tier quota","20 requests per model per day → automatic <b>fallback chain</b> across models; the switch is logged in the transcript."]];
+  $("#incidents").innerHTML = `<h3>What broke during the live run, and how we fixed it</h3>` + inc.map(([c, cl, t, d]) => `<div class="incident"><div class="code-pill ${cl}" style="border:1px solid currentColor">${c}</div><div><b>${t}</b><br><span class="small">${d}</span></div></div>`).join("") +
+    `<div class="small" style="margin-top:8px">Nothing was hidden: <span class="mono">${esc(D.header.model_switch || "")}</span></div>`;
+})();
+
+/* ---------------- init ---------------- */
+setTheme(store("theme") || "dark");
+Deck.init();
+</script>
+</body>
+</html>
