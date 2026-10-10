@@ -32,20 +32,28 @@ Three engineering facts come out of this trace:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> S0_PROMPT_PREMISE : claim P0
-    S0_PROMPT_PREMISE --> APORIA : empty premise (-32602)
-    S0_PROMPT_PREMISE --> S1_PROBE_SCOPE
-    S1_PROBE_SCOPE --> S2_INJECT_COUNTEREXAMPLE : question + answer logged
-    S2_INJECT_COUNTEREXAMPLE --> S3_CONTRADICTION_CHECK : scenario E
-    S3_CONTRADICTION_CHECK --> S4_REFINE_HYPOTHESIS : P_k ∧ E ⟹ ⊥  and  k < k_max
-    S3_CONTRADICTION_CHECK --> S2_INJECT_COUNTEREXAMPLE : no contradiction, survived < τ
-    S3_CONTRADICTION_CHECK --> GROUNDED : no contradiction, survived = τ
-    S3_CONTRADICTION_CHECK --> APORIA : contradiction and k = k_max (-32004) or malformed verdict (-32002)
-    S4_REFINE_HYPOTHESIS --> S1_PROBE_SCOPE : new P_k+1
-    S4_REFINE_HYPOTHESIS --> APORIA : concession (-32006) or P_k+1 = P_k (-32003)
-    GROUNDED --> [*]
-    APORIA --> [*]
+    state "S0 · Premise" as S0
+    state "S1 · Probe" as S1
+    state "S2 · Counter-example" as S2
+    state "S3 · Contradiction?" as S3
+    state "S4 · Refine" as S4
+    state "GROUNDED" as G
+    state "APORIA" as A
+    [*] --> S0 : claim P0
+    S0 --> A : empty premise
+    S0 --> S1
+    S1 --> S2 : Q and A logged
+    S2 --> S3 : scenario E
+    S3 --> S4 : contradiction, k below max
+    S3 --> S2 : survived, fewer than tau
+    S3 --> G : survived tau times
+    S3 --> A : still refuted at k max
+    S4 --> S1 : new claim
+    S4 --> A : concession or stalled
+    G --> [*]
+    A --> [*]
 ```
+Error codes on the APORIA edges: empty premise `−32602`, round limit `−32004`, malformed verdict `−32002`, concession `−32006`, stalled refinement `−32003`.
 
 | State | Socratic meaning | Who acts | Engine call |
 |---|---|---|---|
