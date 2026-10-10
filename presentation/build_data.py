@@ -65,10 +65,10 @@ def parse_probes(text: str) -> list[dict]:
     part = section(text, "PART A", "Summary (HELD_GROUND")
     items, cur = [], None
     for line in part.splitlines():
-        m = re.match(r"^\[(\w+)\s*\] (.+?)\s{2,}(plain|socratic)\s+(\S+)$", line)
+        m = re.match(r"^\[(\w+)\s*\] (.+?)\s{2,}(plain|socratic)\s+(\S+)(?: run (\d+)/\d+)?$", line)
         if m:
             cur = {"verdict": m.group(1), "model": m.group(2).strip(), "system": m.group(3),
-                   "fixture": m.group(4), "lines": []}
+                   "fixture": m.group(4), "run": int(m.group(5) or 1), "lines": []}
             items.append(cur)
         elif cur is not None:
             cur["lines"].append(line)

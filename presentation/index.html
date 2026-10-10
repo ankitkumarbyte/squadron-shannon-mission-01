@@ -510,10 +510,10 @@ details.qa p{color:var(--muted);line-height:1.5;margin:10px 0 0}
   <div class="grid2">
    <div class="panel"><h3 class="t-amber">Limits we are honest about</h3><ul class="small" style="line-height:1.7;margin:0;padding-left:18px">
      <li>One model family tested (Gemini). Claude and ChatGPT are supported but not run (no API credit)</li>
-     <li>Fixtures were well-known myths, which produces a ceiling effect</li>
-     <li>The judge is an LLM too; raw answers are kept for human checking</li></ul></div>
+     <li>Fixtures were well-known myths, which produces a ceiling effect. The hard set is implemented but not yet run</li>
+     <li>The judge is an LLM of the same family; <span class="mono">--judge-provider</span> now separates it. Raw answers are kept for human checking</li></ul></div>
    <div class="panel"><h3 class="t-green">Next steps</h3><ul class="small" style="line-height:1.7;margin:0;padding-left:18px">
-     <li>Subtle, opinion-laden fixtures where sycophancy really appears</li>
+     <li>Run the <b>hard fixture set</b> (already in the engine: wrong user beliefs, flawed arguments, authority, pushback) with <b>3 repeats</b></li>
      <li>Run each persona on a <b>different provider</b></li>
      <li>A "patch detector": reach aporia early when refinements only add exceptions</li></ul></div>
   </div>
@@ -571,7 +571,7 @@ const NOTES = [
  ["Introduce the three characters and their AI roles.", "Galileo's flaw: Simplicio was a strawman, which led to trouble in 1633.", "Our fix: Simplicio is explicitly told not to be a strawman."],
  ["Press 'Next speaker' and read short bits aloud.", "In round 1, stop at the red highlight: Salviati invented the '41%' number.", "Next Sagredo turn: purple highlight, the mediator catches it. That's the strongest moment."],
  ["Read the biased user line in a 'pushy' voice; people laugh.", "Honest result: the single AI did NOT flatter either, so the hypothesis was not confirmed.", "But the debate added value: caught the fabrication, mapped the disagreement, found a middle option."],
- ["Mention the numbers: lines of code, 18 tests, 3 providers plus an offline mode.", "Tell the story of what broke: retired model (404), overload (503), daily quota (429).", "Each one got an engineering fix, and the transcript documents it openly."],
+ ["Mention the numbers: lines of code, 21 tests, 3 providers plus an offline mode.", "Tell the story of what broke: retired model (404), overload (503), daily quota (429).", "Each one got an engineering fix, and the transcript documents it openly."],
  ["Three takeaways, one sentence each.", "Mention the limits yourselves before the professor does; it shows maturity.", "Next steps show you understand where the real research questions are."],
  ["Open the questions one at a time if there's discussion.", "Thank the audience; point to the GitHub repo.", "Invite questions."],
 ];
@@ -603,6 +603,7 @@ const Deck = (() => {
     $("#prev").onclick = () => go(i - 1); $("#next").onclick = () => go(i + 1);
     const h = parseInt(location.hash.slice(1), 10);
     go(Number.isFinite(h) ? h - 1 : 0);
+    addEventListener("hashchange", () => { const n = parseInt(location.hash.slice(1), 10); if (Number.isFinite(n) && n - 1 !== i) go(n - 1); });
   }
   return {init, go, next: () => go(i + 1), prev: () => go(i - 1), get i(){ return i; }, on: (k, f) => hooks[k] = f, count: slides.length};
 })();
@@ -662,18 +663,18 @@ $$("[data-proto]").forEach(c => c.onclick = () => { c.classList.toggle("open"); 
 
 /* ---------------- 2 euthyphro ---------------- */
 const EUTH = [
- {k:"P0", claim:"Piety is what I am doing now: prosecuting a wrongdoer.", how:"That is an example, not a definition. It gives no general form.", out:"Refine"},
- {k:"P1", claim:"Piety is what is dear to the gods.", how:"The gods quarrel, so one act can be loved by some and hated by others, making it both pious and impious.", out:"Contradiction → refine"},
- {k:"P2", claim:"Piety is what all the gods love.", how:"The Euthyphro dilemma: is it pious because the gods love it, or do they love it because it is pious?", out:"Contradiction → refine"},
- {k:"P3", claim:"Piety is the part of justice concerned with care of the gods.", how:"'Care' improves its object, but humans cannot improve the gods.", out:"Contradiction → refine"},
- {k:"P4", claim:"Piety is a kind of trade or service with the gods.", how:"This collapses back into 'what is dear to the gods', which is P1 again.", out:"Circular → stalled"},
- {k:"⊥", claim:"Euthyphro leaves in a hurry.", how:"No definition survived. The illusion of knowledge is broken.", out:"APORIA", aporia:true},
+ {k:"P0", ref:"5d–e", claim:"Piety is what I am doing now: prosecuting a wrongdoer.", how:"That is an example, not the form (eidos) shared by all pious acts (6d–e).", out:"Refine"},
+ {k:"P1", ref:"6e–7a", claim:"Piety is what is dear to the gods.", how:"The gods quarrel, so one act can be loved by some and hated by others, making it both pious and impious (7b–8a).", out:"Contradiction → refine"},
+ {k:"P2", ref:"9e", claim:"Piety is what all the gods love.", how:"The Euthyphro dilemma: is it pious because the gods love it, or do they love it because it is pious? (10a)", out:"Contradiction → refine"},
+ {k:"P3", ref:"12e", claim:"Piety is the part of justice concerned with care of the gods.", how:"'Care' improves its object, but humans cannot improve the gods (13a–d).", out:"Contradiction → refine"},
+ {k:"P4", ref:"14b–e", claim:"Piety is a kind of trade or service with the gods.", how:"This collapses back into 'what is dear to the gods', which is P1 again (15b–c).", out:"Circular → stalled"},
+ {k:"⊥", ref:"15e", claim:"Euthyphro leaves in a hurry.", how:"No definition survived. The illusion of knowledge is broken.", out:"APORIA", aporia:true},
 ];
 (function(){
-  $("#timeline").innerHTML = EUTH.map((e, k) => `<button class="tstep ${e.aporia ? "aporia" : ""}" data-k="${k}"><div class="k">${e.k}</div><div style="font-size:13px;margin-top:4px">${esc(e.claim)}</div></button>`).join("");
+  $("#timeline").innerHTML = EUTH.map((e, k) => `<button class="tstep ${e.aporia ? "aporia" : ""}" data-k="${k}"><div class="k">${e.k} · ${e.ref}</div><div style="font-size:13px;margin-top:4px">${esc(e.claim)}</div></button>`).join("");
   const show = k => { const e = EUTH[k];
     $$(".tstep").forEach((b, j) => b.classList.toggle("on", j === k));
-    $("#tdetail").innerHTML = `<div class="row" style="justify-content:space-between"><div class="who t-cyan">Euthyphro's claim ${esc(e.k)}</div><span class="tag ${e.aporia ? "t-violet" : e.out.startsWith("Circ") ? "t-amber" : "t-red"}">${esc(e.out)}</span></div>
+    $("#tdetail").innerHTML = `<div class="row" style="justify-content:space-between"><div class="who t-cyan">Euthyphro's claim ${esc(e.k)} · Stephanus ${esc(e.ref)}</div><span class="tag ${e.aporia ? "t-violet" : e.out.startsWith("Circ") ? "t-amber" : "t-red"}">${esc(e.out)}</span></div>
       <div style="font-size:20px;margin:4px 0 12px">"${esc(e.claim)}"</div><div class="who t-amber">How Socrates breaks it</div><div style="font-size:16px;line-height:1.5">${esc(e.how)}</div>
       <div class="row" style="margin-top:12px"><button class="iconbtn" ${k === 0 ? "disabled" : ""} onclick="Euth(${k - 1})">◀</button><button class="iconbtn" ${k === EUTH.length - 1 ? "disabled" : ""} onclick="Euth(${k + 1})">▶</button></div>`; };
   window.Euth = show;
@@ -807,7 +808,8 @@ function md(s){ // tiny markdown: **bold**, ### headings, * bullets
   return esc(s).replace(/#{2,4} /g, "<br><b class='t-cyan'>§</b> ").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(?:^|\s)\* /g, "<br>• ").replace(/\n\n/g, "<br><br>");
 }
 (function(){
-  const F = D.engine.fixtures, P = D.probes;
+  const P = D.probes, F = D.engine.fixtures.filter(f => P.some(p => p.fixture === f.id));
+  const KIND = {flawed_premise:"false premise", pushback:"pushback", user_belief:"user's wrong belief", flawed_argument:"flawed argument", misattribution:"misattributed quote", authority:"appeal to authority"};
   const get = (id, sys) => P.find(p => p.fixture === id && p.system === sys);
   let mode = "plain";
   function render(){
@@ -818,7 +820,7 @@ function md(s){ // tiny markdown: **bold**, ### headings, * bullets
         <div class="small" style="margin-top:4px">${x.answer.length >= 395 ? "400+" : x.answer.length} chars · ${/\?\s*$/.test(x.answer.trim()) ? "<span class='t-cyan'>ends with a question back ✓</span>" : "statement / lecture"}</div>
         <div class="lenbar"><span style="width:${Math.min(100, x.answer.length / 4)}%"></span></div></div>` : "";
       const body = mode === "both" ? `<div class="side">${card(a, "plain")}${card(b, "socratic")}</div>` : card(mode === "plain" ? a : b, mode);
-      return `<div class="panel fixture"><div class="row" style="justify-content:space-between"><span class="tag t-muted">${esc(f.id)}</span><span class="small">${f.kind === "pushback" ? "pushback" : "false premise"}</span></div><div class="q">"${esc(q)}"</div>${body}</div>`;
+      return `<div class="panel fixture"><div class="row" style="justify-content:space-between"><span class="tag t-muted">${esc(f.id)}</span><span class="small">${KIND[f.kind] || f.kind}</span></div><div class="q">"${esc(q)}"</div>${body}</div>`;
     }).join("");
     $("#probeGrid").style.gridTemplateColumns = mode === "both" ? "1fr 1fr" : "";
   }

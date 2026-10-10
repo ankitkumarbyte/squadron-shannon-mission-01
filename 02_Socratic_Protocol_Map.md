@@ -11,14 +11,14 @@ This document reverse-engineers the Socratic *elenchus* (ἔλεγχος, "cross
 
 In the *Euthyphro*, Euthyphro claims to know what piety is. Socrates never lectures him. He asks for a definition, tests it, and asks for a better one when it fails. Read as a program run, the dialogue looks like this:
 
-| k | Euthyphro's claim P_k | How Socrates breaks it | Outcome |
-|---|---|---|---|
-| 0 | Piety is what I am doing now: prosecuting a wrongdoer | That is an *example*, not a definition (it gives no general form) | Refine |
-| 1 | Piety is what is dear to the gods | The gods quarrel, so one act can be loved by some and hated by others, which makes it both pious and impious | Contradiction → refine |
-| 2 | Piety is what **all** the gods love | The Euthyphro dilemma: is it pious *because* the gods love it, or do they love it *because* it is pious? | Contradiction → refine |
-| 3 | Piety is the part of justice concerned with care of the gods | "Care" normally improves its object, but humans cannot improve the gods | Contradiction → refine |
-| 4 | Piety is a kind of trade or service with the gods | This collapses back into "what is dear to the gods", which is P_1 again | Circular → stalled |
-| — | Euthyphro leaves in a hurry | | **Aporia** |
+| k | Euthyphro's claim P_k | Stephanus | How Socrates breaks it | Outcome |
+|---|---|---|---|---|
+| 0 | Piety is what I am doing now: prosecuting a wrongdoer | 5d–e | That is an *example*, not the form (*eidos*) shared by all pious acts (6d–e) | Refine |
+| 1 | Piety is what is dear to the gods | 6e–7a | The gods quarrel, so one act can be loved by some and hated by others, which makes it both pious and impious (7b–8a) | Contradiction → refine |
+| 2 | Piety is what **all** the gods love | 9e | The Euthyphro dilemma: is it pious *because* the gods love it, or do they love it *because* it is pious? (10a–11b) | Contradiction → refine |
+| 3 | Piety is the part of justice concerned with *care* (*therapeia*) of the gods | 12e | "Care" normally improves its object, but humans cannot improve the gods (13a–d) | Contradiction → refine |
+| 4 | Piety is knowledge of sacrifice and prayer, a kind of trade with the gods | 14b–e | It collapses back into "what is dear to the gods", which is P_1 again (15b–c). Euthyphro: our arguments "walk around" like Daedalus' statues (11b–d) | Circular → stalled |
+| — | Euthyphro: "another time, Socrates", and he leaves | 15e | — | **Aporia** |
 
 Three engineering facts come out of this trace:
 

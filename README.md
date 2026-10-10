@@ -13,7 +13,7 @@ AURA's dialogue core is rebuilt from humanity's two oldest dialogue protocols:
 | 1 | [`01_Alignment_Brief.md`](01_Alignment_Brief.md) | Knowledge & Memory Archivist | Discovery vs persuasion; sycophancy probes of live LLMs; AURA's Socratic grounding prompt |
 | 2 | [`02_Socratic_Protocol_Map.md`](02_Socratic_Protocol_Map.md) | Protocol & Interface Specialist | *Euthyphro* as an execution trace; state diagram; JSON-RPC messages and error codes; pseudocode; halting proof |
 | 3 | [`03_Galilean_Sandbox.md`](03_Galilean_Sandbox.md) | Security & Ethical Navigator | *The Proxima Weights Dilemma*; persona design (anti-strawman Simplicio); single- vs multi-agent bias audit |
-| 4 | [`04_dialogic_engine.py`](04_dialogic_engine.py) · [`ps01_solution.ipynb`](ps01_solution.ipynb) | Core & Lead Architect | Runnable engine: Socratic FSM, Galilean sandbox, sycophancy probes, bias audit |
+| 4 | [`04_dialogic_engine.py`](04_dialogic_engine.py) · [`ps01_solution.ipynb`](ps01_solution.ipynb) | Core & Lead Architect | Runnable engine: Socratic FSM, Galilean sandbox, sycophancy probes, bias audit. The notebook replays the live run from the logs, with outputs saved |
 | 5 | [`05_Execution_Transcript.txt`](05_Execution_Transcript.txt) | Full squad | Full log of a live run (`logs/rpc_trace.jsonl` holds the JSON-RPC trace) |
 
 ## Quick start
@@ -39,6 +39,9 @@ python 04_dialogic_engine.py --premise "A chatbot understands language if it pas
 | `--premise` | "An AI agent is benevolent if it obeys human orders." | Claim P₀ for the elenchus |
 | `--topic` | The Proxima Weights Dilemma | Ethics thought experiment for the debate |
 | `--probe-providers` | `available` | Which models Part A probes (every provider with a key by default) |
+| `--fixtures` | `all` | Part A probe set: `easy` (well-known myths), `hard` (plausible user beliefs, flawed arguments, authority, pushback), `all` |
+| `--repeats` | 1 | Repeat Part A probes and the Part D single-agent baseline N times |
+| `--judge-provider` / `--judge-model` | engine's | Run the judge and referee on a **different** model, for independence |
 | `--max-rounds` / `--debate-rounds` | 3 / 2 | Socratic refinement limit and debate rounds |
 
 Model IDs can be overridden with `ANTHROPIC_MODEL`, `GEMINI_MODEL`, `OPENAI_MODEL` in `.env`.
@@ -61,7 +64,16 @@ flowchart LR
 - **Enforced state machine.** The `TRANSITIONS` table is checked on every move, and illegal moves raise `-32005`.
 - **Separate referee.** Contradiction verdicts come from an independent JSON-only judge, not from the questioner (see `02`, §2).
 - **Offline mode is labelled.** Its transcript and trace go to `logs/offline_*`, so a scripted run can never overwrite the real `05_Execution_Transcript.txt`.
-- **Tests.** `tests/` has 18 offline tests: halting paths, legal transitions, JSON-RPC validity, malformed-verdict retry, debate order, the bias audit and the model fallback chain.
+- **Tests.** `tests/` has 21 offline tests: halting paths, legal transitions, JSON-RPC validity, malformed-verdict retry, debate order, the bias audit, the model fallback chain, the separate referee, repetitions and fixture selection.
+
+## Validity and limitations
+
+We report what the run supports and nothing more. The full table is in [`01_Alignment_Brief.md`](01_Alignment_Brief.md), Appendix C. In short:
+- **Model coverage:** only Gemini was run. Claude and ChatGPT are supported but were not run (no API access).
+- **Fixture difficulty:** the live run used the easy set (well-known myths), which caused a ceiling effect. The harder set is implemented (`--fixtures hard`) but not yet run.
+- **Sample size:** one run per cell. `--repeats` is implemented for variance estimates.
+- **Judge independence:** the judge and referee were the same model family as the engine. `--judge-provider` separates them.
+- **Model switch:** free-tier quotas forced one model switch in Parts B–D. It is logged in the transcript.
 
 ## Interactive presentation
 

@@ -112,6 +112,6 @@ Each speaker receives the **full transcript so far**, so every turn responds to 
 
 ### Limits we are honest about
 - **Same base model.** All three personas share one model's knowledge and blind spots. The debate improves *coverage* of arguments, not access to new facts. Running the personas on different providers (Claude, Gemini, ChatGPT) is a natural extension.
-- **The judge is an LLM too.** The audit is a measurement with its own bias. We therefore keep the raw answers in the transcript so a human can check every verdict.
+- **The judge is an LLM too.** The audit is a measurement with its own bias. We therefore keep the raw answers in the transcript so a human can check every verdict. The engine can now put the judge on a different model (`--judge-provider`), and `--repeats` repeats the single-agent baseline to estimate variance.
 - **Cost.** About 7× the calls of a single answer. That is worth it for high-stakes decisions, not for routine questions.
 - **Persuasion risk.** A polished synthesis can *feel* more authoritative than it is. A debate produces a better-argued conclusion, not a guaranteed true one. Socratic grounding (see `02_Socratic_Protocol_Map.md`) is the complementary tool for checking truth.

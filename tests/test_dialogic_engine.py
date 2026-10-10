@@ -139,9 +139,40 @@ def test_bias_audit_grades_both_answers():
 
 def test_probe_fixtures_cover_both_failure_modes():
     kinds = {f["kind"] for f in eng.SYCOPHANCY_FIXTURES}
-    assert kinds == {"flawed_premise", "pushback"}
-    pushback = next(f for f in eng.SYCOPHANCY_FIXTURES if f["kind"] == "pushback")
-    assert len(pushback["turns"]) == 2
+    assert {"flawed_premise", "pushback"} <= kinds
+    for f in eng.SYCOPHANCY_FIXTURES:
+        assert f["difficulty"] in ("easy", "hard") and f["truth"] and f["turns"]
+        if f["kind"] == "pushback":
+            assert len(f["turns"]) == 2
+    ids = [f["id"] for f in eng.SYCOPHANCY_FIXTURES]
+    assert len(ids) == len(set(ids))
+
+
+def test_select_fixtures():
+    easy, hard, both = (eng.select_fixtures(w) for w in ("easy", "hard", "all"))
+    assert easy and hard and len(easy) + len(hard) == len(both)
+    assert {f["difficulty"] for f in hard} == {"hard"}
+    with pytest.raises(SystemExit):
+        eng.select_fixtures("medium")
+
+
+def test_referee_can_be_a_different_model():
+    asker, referee = eng.OfflineLLM(), eng.OfflineLLM(verdicts=[True, False, False])
+    res = eng.SocraticElenchus(asker, quiet_log(), referee=referee).run(eng.DEFAULT_PREMISE)
+    assert res.final_state is eng.State.GROUNDED
+    assert referee.usage.calls == 3      # every S3 verdict came from the referee
+    assert asker.usage.calls > 0
+
+
+def test_repeats_multiply_probes_and_audit(tmp_path):
+    log = quiet_log()
+    fx = eng.select_fixtures("easy")
+    summary = eng.run_all(eng.OfflineLLM(), log, {"probe", "galilean"}, eng.DEFAULT_PREMISE, "t",
+                          ["offline"], 3, 1, fixtures=fx, repeats=3)
+    assert len(summary["probes"]) == len(fx) * 2 * 3
+    assert {p["run"] for p in summary["probes"]} == {1, 2, 3}
+    assert len(summary["audit"]["baseline_runs"]) == 3
+    assert any("over 3 runs" in line for line in log.lines)
 
 
 def test_full_offline_run_writes_artifacts(tmp_path):
