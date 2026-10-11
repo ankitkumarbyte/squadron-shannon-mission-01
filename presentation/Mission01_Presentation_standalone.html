@@ -242,6 +242,9 @@ details.qa p{color:var(--muted);line-height:1.5;margin:10px 0 0}
   .navbtn{padding:8px 12px;font-size:13px} .gauge{width:220px} .gauge .num{font-size:40px}
   .tools .iconbtn{padding:5px 8px}
 }
+.print *{transition:none!important;animation:none!important}
+.print .reveal{opacity:1;transform:none}
+.print header.top .tools,.print footer.nav .navbtn,.print #notes{display:none!important}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -635,11 +638,11 @@ document.addEventListener("keydown", e => {
   function frame(){
     x.clearRect(0, 0, W, H);
     for (const s of S) {
-      if (!reduced) { s.z -= 0.6 * devicePixelRatio; if (s.z < 1) { s.z = W; s.x = Math.random() * W - W / 2; s.y = Math.random() * H - H / 2; } }
+      if (!reduced && !window.__still) { s.z -= 0.6 * devicePixelRatio; if (s.z < 1) { s.z = W; s.x = Math.random() * W - W / 2; s.y = Math.random() * H - H / 2; } }
       const k = 300 / s.z, px = s.x * k + W / 2, py = s.y * k + H / 2, r = Math.max(.3, 1.6 - s.z / W * 1.6) * devicePixelRatio;
       x.fillStyle = `rgba(200,225,255,${Math.min(1, 1.2 - s.z / W)})`; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
     }
-    if (!reduced) requestAnimationFrame(frame);
+    if (!reduced && !new URLSearchParams(location.search).has("print")) requestAnimationFrame(frame);
   }
   addEventListener("resize", size); size(); frame();
 })();
@@ -652,6 +655,7 @@ document.addEventListener("keydown", e => {
 })();
 Deck.on(0, () => {
   const target = 7.1, num = $("#gaugeNum"), seg0 = $("#seg0"); let t0 = null;
+  if (new URLSearchParams(location.search).has("print")) { num.textContent = "7.1%"; seg0.setAttribute("opacity", "1"); $("#gaugeSub").textContent = "dialogue state chart restored"; return; }
   function step(t){ t0 ??= t; const p = Math.min(1, (t - t0) / 1800), v = target * (1 - Math.pow(1 - p, 3));
     num.textContent = v.toFixed(1) + "%"; if (p < 1) requestAnimationFrame(step); else $("#gaugeSub").textContent = "dialogue state chart restored"; }
   num.textContent = "0.0%"; $("#gaugeSub").textContent = "dialogue core offline"; seg0.setAttribute("opacity", "0");
@@ -904,8 +908,19 @@ Deck.on(10, () => {
 })();
 
 /* ---------------- init ---------------- */
-setTheme(store("theme") || "dark");
+const PRINT = new URLSearchParams(location.search).has("print");
+setTheme(PRINT ? "dark" : (store("theme") || "dark"));
+if (PRINT) document.documentElement.classList.add("print");
 Deck.init();
+if (PRINT) { // static export: show every interactive element in its "finished" state
+  $("#gaugeNum").textContent = "7.1%"; $("#seg0")?.setAttribute("opacity", "1"); $("#gaugeSub").textContent = "dialogue state chart restored";
+  $$("[data-proto]").forEach(c => c.classList.contains("open") || c.click());
+  for (let k = 0; k < 60; k++) $("#smNext").click();
+  $("#voteX").click();
+  $("#dbAll").click(); const f = $("#feed"); f.style.scrollBehavior = "auto";
+  const flag = $("#feed mark.flag")?.closest(".msg"); if (flag) f.scrollTop = flag.offsetTop - f.offsetTop - 8; // show the fabricated 41% and its catch
+  $$("details.qa").forEach(d => d.open = true);
+}
 </script>
 </body>
 </html>
