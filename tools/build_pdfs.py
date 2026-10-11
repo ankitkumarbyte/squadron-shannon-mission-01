@@ -2,7 +2,7 @@
 """Build the three Moodle PDFs (Moodle accepts PDFs only, max 3 files).
 
   submission/Mission01_SquadronShannon_1_Report.pdf          cover, README overview, reports 01-03
-  submission/Mission01_SquadronShannon_2_Code_and_Tests.pdf  04_dialogic_engine.py + tests
+  submission/Mission01_SquadronShannon_2_Code_Tests_Notebook.pdf  04_dialogic_engine.py + tests
   submission/Mission01_SquadronShannon_3_Slides_and_Transcript.pdf  presentation slides + 05 transcript
 
 Uses headless Google Chrome for HTML -> PDF (mermaid diagrams are rendered by Chrome).
@@ -129,10 +129,10 @@ def cover() -> str:
  <h3 style="margin-top:28px">Contents of this submission</h3>
  <ol class="toc">
   <li><b>PDF 1 · Report:</b> overview (README) · 01 Alignment Brief · 02 Socratic Protocol Map · 03 Galilean Sandbox</li>
-  <li><b>PDF 2 · Code &amp; tests:</b> 04_dialogic_engine.py · tests/test_dialogic_engine.py</li>
+  <li><b>PDF 2 · Code, tests &amp; notebook:</b> 04_dialogic_engine.py · tests/test_dialogic_engine.py · ps01_solution.ipynb (with outputs)</li>
   <li><b>PDF 3 · Slides &amp; transcript:</b> interactive presentation (static pages) · 05_Execution_Transcript.txt</li>
  </ol>
- <p style="margin-top:18px;color:#444">The notebook (<code>ps01_solution.ipynb</code>), JSON-RPC trace, raw logs and the interactive presentation are in the repository.</p>
+ <p style="margin-top:18px;color:#444">The JSON-RPC trace, raw logs and the interactive (clickable) presentation are in the repository.</p>
 </div>"""
 
 
@@ -147,14 +147,35 @@ def build_report(out: Path) -> None:
 
 def build_code(out: Path) -> None:
     fmt = HtmlFormatter(linenos="inline", style="friendly")
-    parts = [f"<h1>Mission 01 — Code &amp; Tests</h1><p>Squadron Shannon · source as in "
+    parts = [f"<h1>Mission 01 — Code, Tests &amp; Notebook</h1><p>Squadron Shannon · source as in "
              f"<a href='{REPO}'>{REPO.replace('https://', '')}</a>. Run <code>python -m pytest -q</code> "
              f"for the offline test suite.</p>"]
     for rel in ("04_dialogic_engine.py", "tests/test_dialogic_engine.py"):
         code = (ROOT / rel).read_text(encoding="utf-8")
         parts.append(f'<section class="{"doc " if rel.startswith("tests") else ""}src"><h2>{rel}</h2>'
                      f"{highlight(code, PythonLexer(), fmt)}</section>")
+    parts.append(f'<section class="doc">{notebook_html()}</section>')
     chrome_pdf(page("Mission 01 Code — Squadron Shannon", "".join(parts), fmt.get_style_defs(".highlight")), out)
+
+
+def notebook_html() -> str:
+    """ps01_solution.ipynb with its saved outputs, as plain HTML (no Jupyter JS needed)."""
+    import nbformat
+    nb = nbformat.read(ROOT / "ps01_solution.ipynb", as_version=4)
+    out = ["<h1>ps01_solution.ipynb — notebook with saved outputs</h1>"
+           "<p>Sections 1–4 replay the live Gemini run from the logs; section 5 runs the offline model.</p>"]
+    for cell in nb.cells:
+        if cell.cell_type == "markdown":
+            out.append(md_to_html(cell.source))
+        elif cell.cell_type == "code":
+            out.append('<div class="src">' + highlight(cell.source, PythonLexer(), HtmlFormatter()) + "</div>")
+            text = "".join(o.get("text", "") for o in cell.get("outputs", []) if o.get("output_type") == "stream")
+            text += "".join(o.get("data", {}).get("text/plain", "") for o in cell.get("outputs", [])
+                            if o.get("output_type") in ("execute_result", "display_data"))
+            if text.strip():
+                out.append(f"<pre style='background:#fff;border-left:3px solid #0369a1;page-break-inside:auto'>"
+                           f"{html.escape(text)}</pre>")
+    return "".join(out)
 
 
 def build_slides(tmpdir: Path) -> Path:
@@ -204,7 +225,7 @@ def main() -> None:
         rep = tmp / "report.pdf"; build_report(rep)
         merge([rep], OUT / "Mission01_SquadronShannon_1_Report.pdf")
         code = tmp / "code.pdf"; build_code(code)
-        merge([code], OUT / "Mission01_SquadronShannon_2_Code_and_Tests.pdf")
+        merge([code], OUT / "Mission01_SquadronShannon_2_Code_Tests_Notebook.pdf")
         slides = build_slides(tmp)
         tr = tmp / "transcript.pdf"; build_transcript(tr)
         merge([slides, tr], OUT / "Mission01_SquadronShannon_3_Slides_and_Transcript.pdf")
